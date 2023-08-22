@@ -21,8 +21,8 @@ config.verbose = 2000
 config.dali = False
 
 # config.rec = "/train_tmp/ms1m-retinaface-t1"   # original
-config.train_dataset = 'oulu_npu_3d_hrn'                                               # Bernardo
-config.train_dataset_path = '/datasets1/bjgbiesseck/liveness/HRN_3D_reconstruction'    # Bernardo
+config.train_dataset = 'oulu-npu_frames_3d_hrn'                                                       # Bernardo
+config.train_dataset_path = '/datasets1/bjgbiesseck/liveness/HRN_3D_reconstruction/oulu-npu_frames'   # Bernardo
 # config.num_classes = 93431   # original
 config.num_classes = 2         # Bernardo
 config.num_image = 5179510

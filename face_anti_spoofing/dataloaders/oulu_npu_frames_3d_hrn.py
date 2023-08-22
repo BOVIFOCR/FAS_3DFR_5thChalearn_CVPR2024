@@ -5,9 +5,9 @@ from torchvision import transforms
 
 
 
-class OULU_NPU_3D_HRN(Dataset):
+class OULU_NPU_FRAMES_3D_HRN(Dataset):
     def __init__(self, root_dir, local_rank, part='train', transform=None):
-        super(OULU_NPU_3D_HRN, self).__init__()
+        super(OULU_NPU_FRAMES_3D_HRN, self).__init__()
         # self.transform = transform
         # self.root_dir = root_dir
         # self.local_rank = local_rank

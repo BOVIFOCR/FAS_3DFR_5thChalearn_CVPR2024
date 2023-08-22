@@ -15,7 +15,7 @@ from torchvision.datasets import ImageFolder
 from utils.utils_distributed_sampler import DistributedSampler
 from utils.utils_distributed_sampler import get_dist_info, worker_init_fn
 
-from dataloaders.oulu_npu_3d_hrn import OULU_NPU_3D_HRN
+from dataloaders.oulu_npu_frames_3d_hrn import OULU_NPU_FRAMES_3D_HRN
 
 
 def get_dataloader(
@@ -58,9 +58,11 @@ def get_dataloader(
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
                 ])
-        if train_dataset == 'oulu_npu_3d_hrn':
-            train_set = OULU_NPU_3D_HRN(root_dir=root_dir, local_rank=local_rank, part='train', transform=transform)
-            # sys.exit(0)
+        if train_dataset == 'oulu-npu_frames_3d_hrn':
+            train_set = OULU_NPU_FRAMES_3D_HRN(root_dir=root_dir, local_rank=local_rank, \
+                                               part='train', transform=transform)
+            print('face_anti_spoofing/dataset.py: TO IMPLEMENT OULU-NPU-FRAMES DATALOADER')
+            sys.exit(0)
         else:
             raise Exception(f'Error: dataloader not implemented for dataset \'{train_dataset}\'.')
 

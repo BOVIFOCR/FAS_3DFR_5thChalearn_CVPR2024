@@ -257,5 +257,5 @@ if __name__ == "__main__":
     torch.backends.cudnn.benchmark = True
     parser = argparse.ArgumentParser(
         description="Distributed Arcface Training in Pytorch")
-    parser.add_argument("--config", type=str, help="Ex: --config configs/oulu-npu_3d-hrn_r18.py")
+    parser.add_argument("--config", type=str, default='configs/oulu-npu_frames_3d_hrn_r18.py', help="Ex: --config configs/oulu-npu_frames_3d_hrn_r18.py")
     main(parser.parse_args())
