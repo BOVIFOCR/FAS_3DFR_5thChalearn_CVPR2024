@@ -101,3 +101,7 @@ ENV/
 .mypy_cache/
 
 .DS_Store
+
+
+
+face_anti_spoofing/work_dirs/*
