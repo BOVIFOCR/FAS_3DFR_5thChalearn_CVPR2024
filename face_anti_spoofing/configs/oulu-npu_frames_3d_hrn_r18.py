@@ -6,21 +6,31 @@ from easydict import EasyDict as edict
 
 config = edict()
 config.margin_list = (1.0, 0.5, 0.0)
+
 # config.network = "r50"   # original
 config.network = "r18"     # Bernardo
+
 config.resume = False
 config.output = None
-config.embedding_size = 512
+
+# config.embedding_size = 512  # original
+config.embedding_size = 256    # Bernardo
+
 config.sample_rate = 1.0
 config.fp16 = True
 config.momentum = 0.9
 config.weight_decay = 5e-4
-config.batch_size = 128
+
+# config.batch_size = 128  # original
+# config.batch_size = 64   # Bernardo
+# config.batch_size = 32   # Bernardo
+config.batch_size = 16     # Bernardo
+
 config.lr = 0.1
 config.verbose = 2000
 config.dali = False
 
-# config.rec = "/train_tmp/ms1m-retinaface-t1"   # original
+# config.rec = "/train_tmp/ms1m-retinaface-t1"                                                # original
 config.train_dataset = 'oulu-npu_frames_3d_hrn'                                               # Bernardo
 config.protocol_id = 1                                                                        # Bernardo
 config.dataset_path = '/experiments/BOVIFOCR_project/datasets/bjgbiesseck/liveness/oulu-npu'  # Bernardo

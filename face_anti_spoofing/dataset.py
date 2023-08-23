@@ -21,7 +21,7 @@ from dataloaders.oulu_npu_frames_3d_hrn import OULU_NPU_FRAMES_3D_HRN
 def get_dataloader(
     train_dataset,  # Bernardo
     protocol_id,    # Bernardo
-    root_dir,       # Bernardo
+    root_dir,       # original
     frames_path,    # Bernardo
     local_rank,
     batch_size,

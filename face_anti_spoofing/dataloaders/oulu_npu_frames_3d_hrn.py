@@ -5,7 +5,6 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 
-# from .utils_dataloaders import find_files, make_samples_list
 from . import utils_dataloaders as ud
 
 
@@ -41,12 +40,8 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
             self.protocol_file_path = os.path.join(self.protocols_path, 'Test.txt')
         else:
             raise Exception(f'Error, dataset partition not recognized: \'{part}\'')
-        
+
         self.frames_path_part = self.root_dir_part.replace(root_dir, frames_path)
-        # print('self.root_dir_part:', self.root_dir_part)
-        # print('self.protocol_file_path:', self.protocol_file_path)
-        # print('self.frames_path_part:', self.frames_path_part)
-        # sys.exit(0)
 
         self.protocol_data = ud.load_file_protocol(self.protocol_file_path)
 
@@ -59,19 +54,20 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
 
     def normalize_img(self, img):
         img = np.transpose(img, (2, 0, 1))  # from (224,224,3) to (3,224,224)
-        img = (((img/255.)-0.5)/0.5)
+        img = ((img/255.)-0.5)/0.5
         # print('img:', img)
         # sys.exit(0)
         return img
 
     
     def load_img(self, img_path):
-        # img_bgr = cv2.imread(img_path)
-        # img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-        img_rgb = np.asarray(Image.open(img_path))
+        img_bgr = cv2.imread(img_path)
+        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+        # img_rgb = np.asarray(Image.open(img_path))
         # print('img:', img)
         # sys.exit(0)
-        return img_rgb.astype(float)
+        img_rgb = cv2.resize(img_rgb, dsize=(112,112), interpolation=cv2.INTER_AREA)
+        return img_rgb.astype(np.float32)
 
 
     def normalize_pc(self, pc):
@@ -205,5 +201,5 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
 
 
     def __len__(self):
-        # return len(self.imgidx)   # original
-        return len(self.samples_list)
+        # return len(self.imgidx)       # original
+        return len(self.samples_list)   # Bernardo
