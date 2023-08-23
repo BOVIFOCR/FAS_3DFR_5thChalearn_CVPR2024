@@ -84,6 +84,7 @@ def main(args):
             print("WandB Data (Entity and Project name) must be provided in config file (base.py).")
             print(f"Config Error: {e}")
 
+    print(f'Loading train dataset \'{cfg.train_dataset}\'...')
     train_loader = get_dataloader(
         # cfg.rec,          # original
         cfg.train_dataset,  # Bernardo
@@ -98,6 +99,7 @@ def main(args):
         cfg.num_workers
     )
 
+    print(f'Building model \'{cfg.network}\'...')
     backbone = get_model(
         cfg.network, dropout=0.0, fp16=cfg.fp16, num_features=cfg.embedding_size).cuda()
 
@@ -110,6 +112,7 @@ def main(args):
     # FIXME using gradient checkpoint if there are some unused parameters will cause error
     backbone._set_static_graph()
 
+    print(f'Setting loss function...')
     margin_loss = CombinedMarginLoss(
         64,
         cfg.margin_list[0],
@@ -118,6 +121,7 @@ def main(args):
         cfg.interclass_filtering_threshold
     )
 
+    print(f'Setting optimizer...')
     if cfg.optimizer == "sgd":
         module_partial_fc = PartialFC_V2(
             margin_loss, cfg.embedding_size, cfg.num_classes,
@@ -164,10 +168,12 @@ def main(args):
         num_space = 25 - len(key)
         logging.info(": " + key + " " * num_space + str(value))
 
-    callback_verification = CallBackVerification(
-        val_targets=cfg.val_targets, rec_prefix=cfg.rec,
-        summary_writer=summary_writer, wandb_logger = wandb_logger
-    )
+    # original
+    # callback_verification = CallBackVerification(
+    #     val_targets=cfg.val_targets, rec_prefix=cfg.rec,
+    #     summary_writer=summary_writer, wandb_logger = wandb_logger
+    # )
+
     callback_logging = CallBackLogging(
         frequent=cfg.frequent,
         total_step=cfg.total_step,
@@ -179,11 +185,13 @@ def main(args):
     loss_am = AverageMeter()
     amp = torch.cuda.amp.grad_scaler.GradScaler(growth_interval=100)
 
+    print(f'Starting training...')
     for epoch in range(start_epoch, cfg.num_epoch):
 
         if isinstance(train_loader, DataLoader):
             train_loader.sampler.set_epoch(epoch)
-        for _, (img, local_labels) in enumerate(train_loader):
+        # for _, (img, local_labels) in enumerate(train_loader):             # original
+        for _, (img, pointcloud, local_labels) in enumerate(train_loader):   # Bernardo
             global_step += 1
             local_embeddings = backbone(img)
             loss: torch.Tensor = module_partial_fc(local_embeddings, local_labels)
@@ -216,8 +224,9 @@ def main(args):
                 loss_am.update(loss.item(), 1)
                 callback_logging(global_step, loss_am, epoch, cfg.fp16, lr_scheduler.get_last_lr()[0], amp)
 
-                if global_step % cfg.verbose == 0 and global_step > 0:
-                    callback_verification(global_step, backbone)
+                # original
+                # if global_step % cfg.verbose == 0 and global_step > 0:
+                #     callback_verification(global_step, backbone)
 
         if cfg.save_all_states:
             checkpoint = {

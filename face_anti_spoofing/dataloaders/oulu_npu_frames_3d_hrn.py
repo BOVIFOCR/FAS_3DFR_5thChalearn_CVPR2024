@@ -60,14 +60,18 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
     def normalize_img(self, img):
         img = np.transpose(img, (2, 0, 1))  # from (224,224,3) to (3,224,224)
         img = (((img/255.)-0.5)/0.5)
+        # print('img:', img)
+        # sys.exit(0)
         return img
 
     
     def load_img(self, img_path):
         # img_bgr = cv2.imread(img_path)
         # img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-        img_rgb = Image.open(img_path)
-        return img_rgb
+        img_rgb = np.asarray(Image.open(img_path))
+        # print('img:', img)
+        # sys.exit(0)
+        return img_rgb.astype(float)
 
 
     def normalize_pc(self, pc):
@@ -191,7 +195,7 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
             rgb_data = self.normalize_img(rgb_data)
 
         if pc_path.endswith('.obj'):
-            pc_data = self.read_obj(pc_path)
+            pc_data = self.read_obj(pc_path)['vertices']
             pc_data = self.normalize_pc(pc_data)
 
         if label == 0:
