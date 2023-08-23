@@ -36,8 +36,11 @@ config.protocol_id = 1                                                          
 config.dataset_path = '/experiments/BOVIFOCR_project/datasets/bjgbiesseck/liveness/oulu-npu'  # Bernardo
 config.frames_path = '/datasets1/bjgbiesseck/liveness/HRN_3D_reconstruction/oulu-npu_frames'  # Bernardo
 
+# config.img_size = 112        # Bernardo
+config.img_size = 224          # Bernardo
+
 # config.num_classes = 93431   # original
-config.num_classes = 2         # Bernardo
+config.num_classes = 2         # (live or spoof) Bernardo
 
 # config.num_image = 5179510   # original
 config.num_image = 1800        # original

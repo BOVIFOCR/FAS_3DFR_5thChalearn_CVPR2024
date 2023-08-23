@@ -91,6 +91,7 @@ def main(args):
         cfg.protocol_id,    # Bernardo
         cfg.dataset_path,   # Bernardo
         cfg.frames_path,    # Bernardo
+        cfg.img_size,       # Bernardo
         local_rank,
         cfg.batch_size,
         cfg.dali,
@@ -101,7 +102,7 @@ def main(args):
 
     print(f'Building model \'{cfg.network}\'...')
     backbone = get_model(
-        cfg.network, dropout=0.0, fp16=cfg.fp16, num_features=cfg.embedding_size).cuda()
+        cfg.network, img_size=cfg.img_size, dropout=0.0, fp16=cfg.fp16, num_features=cfg.embedding_size).cuda()
 
     backbone = torch.nn.parallel.DistributedDataParallel(
         module=backbone, broadcast_buffers=False, device_ids=[local_rank], bucket_cap_mb=16,

@@ -9,7 +9,7 @@ from . import utils_dataloaders as ud
 
 
 class OULU_NPU_FRAMES_3D_HRN(Dataset):
-    def __init__(self, root_dir, protocol_id, frames_path, part='train', local_rank=0, transform=None):
+    def __init__(self, root_dir, protocol_id, frames_path, img_size, part='train', local_rank=0, transform=None):
         super(OULU_NPU_FRAMES_3D_HRN, self).__init__()
         # self.transform = transform
         # self.root_dir = root_dir
@@ -25,8 +25,7 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
         # else:
         #     self.imgidx = np.array(list(self.imgrec.keys))
 
-        # BERNARDO
-        # TODO: load tuples (rgb path, point cloud path, label)   # 0: spoof, 1: real
+        self.img_size = img_size
         self.protocols_path = os.path.join(root_dir, 'Protocols', 'Protocol_'+str(protocol_id))
         
         if part == 'train':
@@ -66,7 +65,8 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
         # img_rgb = np.asarray(Image.open(img_path))
         # print('img:', img)
         # sys.exit(0)
-        img_rgb = cv2.resize(img_rgb, dsize=(112,112), interpolation=cv2.INTER_AREA)
+        if (img_rgb.shape[0], img_rgb.shape[1]) != (self.img_size, self.img_size):
+            img_rgb = cv2.resize(img_rgb, dsize=(self.img_size,self.img_size), interpolation=cv2.INTER_AREA)
         return img_rgb.astype(np.float32)
 
 
@@ -190,12 +190,12 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
             rgb_data = self.load_img(img_path)
             rgb_data = self.normalize_img(rgb_data)
 
-        if pc_path.endswith('.obj'):
-            pc_data = self.read_obj(pc_path)['vertices']
-            pc_data = self.normalize_pc(pc_data)
-
-        if label == 0:
-            pc_data = self.flat_pc_axis_z(pc_data)
+        # if pc_path.endswith('.obj'):
+        #     pc_data = self.read_obj(pc_path)['vertices']
+        #     pc_data = self.normalize_pc(pc_data)
+        # if label == 0:
+        #     pc_data = self.flat_pc_axis_z(pc_data)
+        pc_data = np.zeros(1)   # ONLY FOR TESTS
         
         return (rgb_data, pc_data, label)
 
