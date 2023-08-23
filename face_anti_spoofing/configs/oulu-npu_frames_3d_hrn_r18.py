@@ -21,11 +21,17 @@ config.verbose = 2000
 config.dali = False
 
 # config.rec = "/train_tmp/ms1m-retinaface-t1"   # original
-config.train_dataset = 'oulu-npu_frames_3d_hrn'                                                       # Bernardo
-config.train_dataset_path = '/datasets1/bjgbiesseck/liveness/HRN_3D_reconstruction/oulu-npu_frames'   # Bernardo
+config.train_dataset = 'oulu-npu_frames_3d_hrn'                                               # Bernardo
+config.protocol_id = 1                                                                        # Bernardo
+config.dataset_path = '/experiments/BOVIFOCR_project/datasets/bjgbiesseck/liveness/oulu-npu'  # Bernardo
+config.frames_path = '/datasets1/bjgbiesseck/liveness/HRN_3D_reconstruction/oulu-npu_frames'  # Bernardo
+
 # config.num_classes = 93431   # original
 config.num_classes = 2         # Bernardo
-config.num_image = 5179510
+
+# config.num_image = 5179510   # original
+config.num_image = 1800        # original
+
 config.num_epoch = 20
 config.warmup_epoch = 0
 # config.val_targets = ['lfw', 'cfp_fp', "agedb_30"]

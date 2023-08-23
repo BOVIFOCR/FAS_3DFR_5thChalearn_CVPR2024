@@ -20,7 +20,9 @@ from dataloaders.oulu_npu_frames_3d_hrn import OULU_NPU_FRAMES_3D_HRN
 
 def get_dataloader(
     train_dataset,  # Bernardo
-    root_dir,
+    protocol_id,    # Bernardo
+    root_dir,       # Bernardo
+    frames_path,    # Bernardo
     local_rank,
     batch_size,
     dali = False,
@@ -59,10 +61,8 @@ def get_dataloader(
                 transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
                 ])
         if train_dataset == 'oulu-npu_frames_3d_hrn':
-            train_set = OULU_NPU_FRAMES_3D_HRN(root_dir=root_dir, local_rank=local_rank, \
-                                               part='train', transform=transform)
-            print('face_anti_spoofing/dataset.py: TO IMPLEMENT OULU-NPU-FRAMES DATALOADER')
-            sys.exit(0)
+            train_set = OULU_NPU_FRAMES_3D_HRN(root_dir=root_dir, protocol_id=protocol_id, frames_path=frames_path, \
+                                               part='train', local_rank=local_rank, transform=transform)
         else:
             raise Exception(f'Error: dataloader not implemented for dataset \'{train_dataset}\'.')
 

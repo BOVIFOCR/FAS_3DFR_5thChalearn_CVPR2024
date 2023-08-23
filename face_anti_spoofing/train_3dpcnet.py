@@ -85,9 +85,11 @@ def main(args):
             print(f"Config Error: {e}")
 
     train_loader = get_dataloader(
-        # cfg.rec,                # original
-        cfg.train_dataset,        # Bernardo
-        cfg.train_dataset_path,   # Bernardo
+        # cfg.rec,          # original
+        cfg.train_dataset,  # Bernardo
+        cfg.protocol_id,    # Bernardo
+        cfg.dataset_path,   # Bernardo
+        cfg.frames_path,    # Bernardo
         local_rank,
         cfg.batch_size,
         cfg.dali,
@@ -163,7 +165,7 @@ def main(args):
         logging.info(": " + key + " " * num_space + str(value))
 
     callback_verification = CallBackVerification(
-        val_targets=cfg.val_targets, rec_prefix=cfg.rec, 
+        val_targets=cfg.val_targets, rec_prefix=cfg.rec,
         summary_writer=summary_writer, wandb_logger = wandb_logger
     )
     callback_logging = CallBackLogging(
