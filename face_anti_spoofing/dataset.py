@@ -24,6 +24,7 @@ def get_dataloader(
     root_dir,       # original
     frames_path,    # Bernardo
     img_size,       # Bernardo
+    part,           # 'train', 'val' or 'test'
     local_rank,
     batch_size,
     dali = False,
@@ -62,8 +63,8 @@ def get_dataloader(
                 transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
                 ])
         if train_dataset == 'oulu-npu_frames_3d_hrn':
-            train_set = OULU_NPU_FRAMES_3D_HRN(root_dir, protocol_id, frames_path, img_size, \
-                                               part='train', local_rank=local_rank, transform=transform)
+            train_set = OULU_NPU_FRAMES_3D_HRN(root_dir, protocol_id, frames_path, img_size, part, \
+                                               local_rank=local_rank, transform=transform)
         else:
             raise Exception(f'Error: dataloader not implemented for dataset \'{train_dataset}\'.')
 

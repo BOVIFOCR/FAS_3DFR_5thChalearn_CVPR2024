@@ -27,7 +27,10 @@ config.weight_decay = 5e-4
 config.batch_size = 16     # Bernardo
 
 config.lr = 0.1
-config.verbose = 2000
+
+# config.verbose = 2000    # original
+config.verbose = 100       # Bernardo
+
 config.dali = False
 
 # config.rec = "/train_tmp/ms1m-retinaface-t1"                                                # original

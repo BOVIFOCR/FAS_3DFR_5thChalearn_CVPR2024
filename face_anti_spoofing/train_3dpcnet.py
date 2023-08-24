@@ -84,7 +84,7 @@ def main(args):
             print("WandB Data (Entity and Project name) must be provided in config file (base.py).")
             print(f"Config Error: {e}")
 
-    print(f'Loading train dataset \'{cfg.train_dataset}\'...')
+    print(f'Loading train data (dataset: \'{cfg.train_dataset}\')...')
     train_loader = get_dataloader(
         # cfg.rec,          # original
         cfg.train_dataset,  # Bernardo
@@ -92,6 +92,24 @@ def main(args):
         cfg.dataset_path,   # Bernardo
         cfg.frames_path,    # Bernardo
         cfg.img_size,       # Bernardo
+        'train',
+        local_rank,
+        cfg.batch_size,
+        cfg.dali,
+        cfg.dali_aug,
+        cfg.seed,
+        cfg.num_workers
+    )
+
+    print(f'Loading val data (dataset: \'{cfg.train_dataset}\')...')
+    val_loader = get_dataloader(
+        # cfg.rec,          # original
+        cfg.train_dataset,  # Bernardo
+        cfg.protocol_id,    # Bernardo
+        cfg.dataset_path,   # Bernardo
+        cfg.frames_path,    # Bernardo
+        cfg.img_size,       # Bernardo
+        'val',
         local_rank,
         cfg.batch_size,
         cfg.dali,
@@ -188,6 +206,8 @@ def main(args):
 
     print(f'Starting training...')
     for epoch in range(start_epoch, cfg.num_epoch):
+        backbone.train()            # Bernardo
+        module_partial_fc.train()   # Bernardo
 
         if isinstance(train_loader, DataLoader):
             train_loader.sampler.set_epoch(epoch)
@@ -225,9 +245,11 @@ def main(args):
                 loss_am.update(loss.item(), 1)
                 callback_logging(global_step, loss_am, epoch, cfg.fp16, lr_scheduler.get_last_lr()[0], amp)
 
-                # original
-                # if global_step % cfg.verbose == 0 and global_step > 0:
-                #     callback_verification(global_step, backbone)
+                if global_step % cfg.verbose == 0 and global_step > 0:
+                    # callback_verification(global_step, backbone)                          # original
+                    validate(module_partial_fc, backbone, val_loader, global_step, epoch)   # Bernardo
+                    print('--------------')
+
 
         if cfg.save_all_states:
             checkpoint = {
@@ -262,6 +284,21 @@ def main(args):
             model = wandb.Artifact(artifact_name, type='model')
             model.add_file(path_module)
             wandb_logger.log_artifact(model)
+
+
+# Bernardo
+def validate(module_partial_fc, backbone, val_loader, global_step, epoch):
+    with torch.no_grad():
+        module_partial_fc.eval()
+        backbone.eval()
+
+        val_loss_am = AverageMeter()
+        for val_idx, (val_img, val_pointcloud, val_labels) in enumerate(val_loader):
+            val_embeddings = backbone(val_img)
+            val_loss = module_partial_fc(val_embeddings, val_labels)
+            val_loss_am.update(val_loss.item(), 1)
+        print('Validation:    val_loss:', val_loss_am.avg)
+        val_loss_am.reset()
 
 
 
