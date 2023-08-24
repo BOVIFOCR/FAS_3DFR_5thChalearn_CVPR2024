@@ -13,7 +13,7 @@ from partial_fc_v2 import PartialFC_V2
 from torch import distributed
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from utils.utils_callbacks import CallBackLogging, CallBackVerification
+from utils.utils_callbacks import CallBackLogging, CallBackEpochLogging, CallBackVerification
 from utils.utils_config import get_config
 from utils.utils_distributed_sampler import setup_seed
 from utils.utils_logging import AverageMeter, init_logging
@@ -100,6 +100,7 @@ def main(args):
         cfg.seed,
         cfg.num_workers
     )
+    print(f'    train samples: {len(train_loader.dataset)}')
 
     print(f'Loading val data (dataset: \'{cfg.train_dataset}\')...')
     val_loader = get_dataloader(
@@ -117,8 +118,9 @@ def main(args):
         cfg.seed,
         cfg.num_workers
     )
+    print(f'    val samples: {len(val_loader.dataset)}')
 
-    print(f'Building model \'{cfg.network}\'...')
+    print(f'\nBuilding model \'{cfg.network}\'...')
     backbone = get_model(
         cfg.network, img_size=cfg.img_size, dropout=0.0, fp16=cfg.fp16, num_features=cfg.embedding_size).cuda()
 
@@ -131,7 +133,7 @@ def main(args):
     # FIXME using gradient checkpoint if there are some unused parameters will cause error
     backbone._set_static_graph()
 
-    print(f'Setting loss function...')
+    print(f'\nSetting loss function...')
     margin_loss = CombinedMarginLoss(
         64,
         cfg.margin_list[0],
@@ -140,7 +142,7 @@ def main(args):
         cfg.interclass_filtering_threshold
     )
 
-    print(f'Setting optimizer...')
+    print(f'\nSetting optimizer...')
     if cfg.optimizer == "sgd":
         module_partial_fc = PartialFC_V2(
             margin_loss, cfg.embedding_size, cfg.num_classes,
@@ -192,11 +194,20 @@ def main(args):
     #     val_targets=cfg.val_targets, rec_prefix=cfg.rec,
     #     summary_writer=summary_writer, wandb_logger = wandb_logger
     # )
+    # callback_logging = CallBackLogging(
+    #     frequent=cfg.frequent,
+    #     total_step=cfg.total_step,
+    #     batch_size=cfg.batch_size,
+    #     start_step = global_step,
+    #     writer=summary_writer
+    # )
 
-    callback_logging = CallBackLogging(
+    # Bernardo
+    callback_logging = CallBackEpochLogging(
         frequent=cfg.frequent,
         total_step=cfg.total_step,
-        batch_size=cfg.batch_size,
+        batch_size=len(train_loader),
+        num_batches=cfg.batch_size,
         start_step = global_step,
         writer=summary_writer
     )
@@ -204,7 +215,7 @@ def main(args):
     loss_am = AverageMeter()
     amp = torch.cuda.amp.grad_scaler.GradScaler(growth_interval=100)
 
-    print(f'Starting training...')
+    print(f'\nStarting training...')
     for epoch in range(start_epoch, cfg.num_epoch):
         if isinstance(train_loader, DataLoader):
             train_loader.sampler.set_epoch(epoch)
@@ -231,24 +242,25 @@ def main(args):
                     torch.nn.utils.clip_grad_norm_(backbone.parameters(), 5)
                     opt.step()
                     opt.zero_grad()
+
             lr_scheduler.step()
+            loss_am.update(loss.item(), 1)
 
-            with torch.no_grad():
-                if wandb_logger:
-                    wandb_logger.log({
-                        'Loss/Step Loss': loss.item(),
-                        'Loss/Train Loss': loss_am.avg,
-                        'Process/Step': global_step,
-                        'Process/Epoch': epoch
-                    })
-                    
-                loss_am.update(loss.item(), 1)
-                callback_logging(global_step, loss_am, epoch, cfg.fp16, lr_scheduler.get_last_lr()[0], amp)
+        with torch.no_grad():
+            if wandb_logger:
+                wandb_logger.log({
+                    # 'Loss/Step Loss': loss.item(),
+                    'Loss/Train Loss': loss_am.avg,
+                    # 'Process/Step': global_step,
+                    'Process/Epoch': epoch
+                })
 
-                if global_step % cfg.verbose == 0 and global_step > 0:
-                    # callback_verification(global_step, backbone)                          # original
-                    validate(module_partial_fc, backbone, val_loader, global_step, epoch)   # Bernardo
-                    print('--------------')
+            # print('Train:    train_loss:', loss_am.avg)
+            callback_logging(global_step, loss_am, epoch, cfg.fp16, lr_scheduler.get_last_lr()[0], amp)
+            loss_am.reset()
+
+            validate(module_partial_fc, backbone, val_loader, global_step, epoch)   # Bernardo
+            print('--------------')
 
 
         if cfg.save_all_states:
