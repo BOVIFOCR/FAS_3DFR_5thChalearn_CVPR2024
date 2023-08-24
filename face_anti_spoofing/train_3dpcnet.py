@@ -272,7 +272,7 @@ def main(args):
             loss_am.reset()
             train_evaluator.reset()
 
-            validate(module_partial_fc, backbone, val_loader, val_evaluator, global_step, epoch)   # Bernardo
+            validate(module_partial_fc, backbone, val_loader, val_evaluator, global_step, epoch, summary_writer)   # Bernardo
             print('--------------')
 
 
@@ -313,7 +313,7 @@ def main(args):
 
 
 # Bernardo
-def validate(module_partial_fc, backbone, val_loader, val_evaluator, global_step, epoch):
+def validate(module_partial_fc, backbone, val_loader, val_evaluator, global_step, epoch, writer):
     with torch.no_grad():
         module_partial_fc.eval()
         backbone.eval()
@@ -327,6 +327,10 @@ def validate(module_partial_fc, backbone, val_loader, val_evaluator, global_step
             val_evaluator.update(pred_labels, val_labels)
         
         val_acc = val_evaluator.evaluate()
+
+        writer.add_scalar('loss/val_loss', val_loss_am.avg, epoch)
+        writer.add_scalar('acc/val_acc', val_acc, epoch)
+
         print('Validation:    val_loss: %.4f    val_acc: %.4f%%' % (val_loss_am.avg, val_acc))
         val_loss_am.reset()
 

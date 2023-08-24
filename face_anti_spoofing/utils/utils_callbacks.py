@@ -169,9 +169,10 @@ class CallBackEpochLogging(object):
         acc = train_evaluator.evaluate()
 
         if self.writer is not None:
-            self.writer.add_scalar('time_for_end', time_for_end, global_step)
-            self.writer.add_scalar('learning_rate', learning_rate, global_step)
-            self.writer.add_scalar('loss', loss.avg, global_step)
+            # self.writer.add_scalar('time_for_end', time_for_end, global_step)
+            self.writer.add_scalar('learning_rate', learning_rate, epoch)
+            self.writer.add_scalar('loss/train_loss', loss.avg, epoch)
+            self.writer.add_scalar('acc/train_acc', acc, epoch)
         if fp16:
             msg = " Epoch: %d   Loss %.4f   Acc %.4f%%   LearningRate %.6f   Global Step: %d   " \
                     "Fp16 Grad Scale: %2.f   Speed %.2f samples/sec   Required: %1.f hours" % (
