@@ -3,6 +3,7 @@ import logging
 import os, sys
 from datetime import datetime
 
+import random
 import numpy as np
 import torch
 from backbones import get_model
@@ -34,7 +35,8 @@ except KeyError:
     world_size = 1
     distributed.init_process_group(
         backend="nccl",
-        init_method="tcp://127.0.0.1:12584",
+        # init_method="tcp://127.0.0.1:12584",    # original
+        init_method="tcp://127.0.0.1:" + str(int(random.random() * 10000 + 12000)),    # Bernardo
         rank=rank,
         world_size=world_size,
     )
@@ -84,7 +86,7 @@ def main(args):
             print("WandB Data (Entity and Project name) must be provided in config file (base.py).")
             print(f"Config Error: {e}")
 
-    print(f'Loading train data (dataset: \'{cfg.train_dataset}\')...')
+    print(f'Loading train paths (dataset: \'{cfg.train_dataset}\')...')
     train_loader = get_dataloader(
         # cfg.rec,          # original
         cfg.train_dataset,  # Bernardo
@@ -102,7 +104,7 @@ def main(args):
     )
     print(f'    train samples: {len(train_loader.dataset)}')
 
-    print(f'Loading val data (dataset: \'{cfg.train_dataset}\')...')
+    print(f'Loading val paths (dataset: \'{cfg.train_dataset}\')...')
     val_loader = get_dataloader(
         # cfg.rec,          # original
         cfg.train_dataset,  # Bernardo

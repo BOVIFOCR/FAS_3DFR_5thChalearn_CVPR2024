@@ -47,8 +47,10 @@ config.img_size = 224          # Bernardo
 config.num_classes = 2         # (live or spoof) Bernardo
 
 # config.num_image = 5179510   # original
-config.num_image = 1800        # original
+config.num_image = 1800        # Bernardo
 
-config.num_epoch = 20
+# config.num_epoch = 20
+config.num_epoch = 50
+
 config.warmup_epoch = 0
 # config.val_targets = ['lfw', 'cfp_fp', "agedb_30"]
