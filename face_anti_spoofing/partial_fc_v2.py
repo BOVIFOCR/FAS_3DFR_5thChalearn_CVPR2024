@@ -1,4 +1,5 @@
 
+import sys
 import math
 from typing import Callable
 
@@ -162,9 +163,18 @@ class PartialFC_V2(torch.nn.Module):
             logits = logits.float()
         logits = logits.clamp(-1, 1)
 
+        # original
+        # logits = self.margin_softmax(logits, labels)
+        # loss = self.dist_cross_entropy(logits, labels)
+        # return loss
+    
+        # Bernardo
         logits = self.margin_softmax(logits, labels)
         loss = self.dist_cross_entropy(logits, labels)
-        return loss
+        probabilities = torch.nn.functional.softmax(logits, dim=1)
+        pred_labels = torch.argmax(probabilities, dim=1)
+        return loss, pred_labels
+
 
 
 class DistCrossEntropyFunc(torch.autograd.Function):

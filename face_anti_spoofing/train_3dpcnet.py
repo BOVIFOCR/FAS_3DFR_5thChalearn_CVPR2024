@@ -1,6 +1,6 @@
 import argparse
 import logging
-import os
+import os, sys
 from datetime import datetime
 
 import numpy as np
@@ -13,7 +13,7 @@ from partial_fc_v2 import PartialFC_V2
 from torch import distributed
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from utils.utils_callbacks import CallBackLogging, CallBackEpochLogging, CallBackVerification
+from utils.utils_callbacks import CallBackLogging, CallBackEpochLogging, CallBackVerification, EvaluatorLogging
 from utils.utils_config import get_config
 from utils.utils_distributed_sampler import setup_seed
 from utils.utils_logging import AverageMeter, init_logging
@@ -212,6 +212,14 @@ def main(args):
         writer=summary_writer
     )
 
+    train_evaluator = EvaluatorLogging(num_samples=len(train_loader.dataset),
+                                       batch_size=cfg.batch_size,
+                                       num_batches=len(train_loader))
+    
+    val_evaluator = EvaluatorLogging(num_samples=len(val_loader.dataset),
+                                     batch_size=cfg.batch_size,
+                                     num_batches=len(val_loader))
+
     loss_am = AverageMeter()
     amp = torch.cuda.amp.grad_scaler.GradScaler(growth_interval=100)
 
@@ -226,7 +234,8 @@ def main(args):
 
             global_step += 1
             local_embeddings = backbone(img)
-            loss: torch.Tensor = module_partial_fc(local_embeddings, local_labels)
+            # loss: torch.Tensor = module_partial_fc(local_embeddings, local_labels)   # original
+            loss, pred_labels = module_partial_fc(local_embeddings, local_labels)      # Bernardo
 
             if cfg.fp16:
                 amp.scale(loss).backward()
@@ -246,6 +255,9 @@ def main(args):
             lr_scheduler.step()
             loss_am.update(loss.item(), 1)
 
+            train_evaluator.update(pred_labels, local_labels)
+
+
         with torch.no_grad():
             if wandb_logger:
                 wandb_logger.log({
@@ -256,10 +268,11 @@ def main(args):
                 })
 
             # print('Train:    train_loss:', loss_am.avg)
-            callback_logging(global_step, loss_am, epoch, cfg.fp16, lr_scheduler.get_last_lr()[0], amp)
+            callback_logging(global_step, loss_am, train_evaluator, epoch, cfg.fp16, lr_scheduler.get_last_lr()[0], amp)
             loss_am.reset()
+            train_evaluator.reset()
 
-            validate(module_partial_fc, backbone, val_loader, global_step, epoch)   # Bernardo
+            validate(module_partial_fc, backbone, val_loader, val_evaluator, global_step, epoch)   # Bernardo
             print('--------------')
 
 
@@ -298,18 +311,23 @@ def main(args):
             wandb_logger.log_artifact(model)
 
 
+
 # Bernardo
-def validate(module_partial_fc, backbone, val_loader, global_step, epoch):
+def validate(module_partial_fc, backbone, val_loader, val_evaluator, global_step, epoch):
     with torch.no_grad():
         module_partial_fc.eval()
         backbone.eval()
+        val_evaluator.reset()
 
         val_loss_am = AverageMeter()
         for val_idx, (val_img, val_pointcloud, val_labels) in enumerate(val_loader):
             val_embeddings = backbone(val_img)
-            val_loss = module_partial_fc(val_embeddings, val_labels)
+            val_loss, pred_labels = module_partial_fc(val_embeddings, val_labels)
             val_loss_am.update(val_loss.item(), 1)
-        print('Validation:    val_loss:', val_loss_am.avg)
+            val_evaluator.update(pred_labels, val_labels)
+        
+        val_acc = val_evaluator.evaluate()
+        print('Validation:    val_loss: %.4f    val_acc: %.4f%%' % (val_loss_am.avg, val_acc))
         val_loss_am.reset()
 
 

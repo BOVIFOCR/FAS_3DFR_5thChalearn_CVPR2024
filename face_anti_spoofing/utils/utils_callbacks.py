@@ -125,7 +125,7 @@ class CallBackLogging(object):
                 self.tic = time.time()
 
 
-
+# Bernardo
 class CallBackEpochLogging(object):
     def __init__(self, frequent, total_step, batch_size, num_batches, start_step=0, writer=None):
         self.frequent: int = frequent
@@ -144,6 +144,7 @@ class CallBackEpochLogging(object):
     def __call__(self,
                  global_step: int,
                  loss: AverageMeter,
+                 train_evaluator,
                  epoch: int,
                  fp16: bool,
                  learning_rate: float,
@@ -164,20 +165,23 @@ class CallBackEpochLogging(object):
         time_sec_avg = time_sec / (global_step - self.start_step + 1)
         eta_sec = time_sec_avg * (self.total_step - global_step - 1)
         time_for_end = eta_sec/3600
+
+        acc = train_evaluator.evaluate()
+
         if self.writer is not None:
             self.writer.add_scalar('time_for_end', time_for_end, global_step)
             self.writer.add_scalar('learning_rate', learning_rate, global_step)
             self.writer.add_scalar('loss', loss.avg, global_step)
         if fp16:
-            msg = " Epoch: %d   Loss %.4f   LearningRate %.6f   Global Step: %d   " \
+            msg = " Epoch: %d   Loss %.4f   Acc %.4f%%   LearningRate %.6f   Global Step: %d   " \
                     "Fp16 Grad Scale: %2.f   Speed %.2f samples/sec   Required: %1.f hours" % (
-                        epoch, loss.avg, learning_rate, global_step,
+                        epoch, loss.avg, acc, learning_rate, global_step,
                         grad_scaler.get_scale(), speed_total, time_for_end
                     )
         else:
-            msg = " Epoch: %d   Loss %.4f   LearningRate %.6f   Global Step: %d   Speed %.2f samples/sec   " \
+            msg = " Epoch: %d   Loss %.4f   Acc %.4f%%   LearningRate %.6f   Global Step: %d   Speed %.2f samples/sec   " \
                     "Required: %1.f hours" % (
-                        epoch, loss.avg, learning_rate, global_step, speed_total, time_for_end
+                        epoch, loss.avg, acc, learning_rate, global_step, speed_total, time_for_end
                     )
         logging.info(msg)
         loss.reset()
@@ -187,3 +191,35 @@ class CallBackEpochLogging(object):
         else:
             self.init = True
             self.tic = time.time()
+
+
+# Bernardo
+class EvaluatorLogging(object):
+    def __init__(self, num_samples, batch_size, num_batches):
+        self.num_samples: int = num_samples
+        self.batch_size: int = batch_size
+        self.num_batches: int = num_batches
+        
+        self.curr_idx = 0
+        self.all_pred_labels = torch.zeros((num_samples))
+        self.all_true_labels = torch.zeros((num_samples))
+
+
+    def update(self, pred_labels, true_labels):
+        assert pred_labels.size(0) == true_labels.size(0), 'Error: pred_labels.size(0) is different from true_labels.size(0). Sizes must be equal.'
+        self.all_pred_labels[self.curr_idx:self.curr_idx+pred_labels.size(0)] = pred_labels
+        self.all_true_labels[self.curr_idx:self.curr_idx+true_labels.size(0)] = true_labels
+        self.curr_idx += pred_labels.size(0)
+
+
+    def evaluate(self):
+        correct = (self.all_pred_labels == self.all_true_labels).sum().item()
+        total = self.all_pred_labels.size(0)
+        accuracy = (correct / total) * 100
+        return accuracy
+
+
+    def reset(self):
+        self.curr_idx = 0
+        self.all_pred_labels[:] = 0
+        self.all_true_labels[:] = 0
