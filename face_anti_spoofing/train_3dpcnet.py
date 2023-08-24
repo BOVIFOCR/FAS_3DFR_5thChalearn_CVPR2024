@@ -206,13 +206,13 @@ def main(args):
 
     print(f'Starting training...')
     for epoch in range(start_epoch, cfg.num_epoch):
-        backbone.train()            # Bernardo
-        module_partial_fc.train()   # Bernardo
-
         if isinstance(train_loader, DataLoader):
             train_loader.sampler.set_epoch(epoch)
         # for _, (img, local_labels) in enumerate(train_loader):             # original
         for _, (img, pointcloud, local_labels) in enumerate(train_loader):   # Bernardo
+            backbone.train()            # Bernardo
+            module_partial_fc.train()   # Bernardo
+
             global_step += 1
             local_embeddings = backbone(img)
             loss: torch.Tensor = module_partial_fc(local_embeddings, local_labels)
