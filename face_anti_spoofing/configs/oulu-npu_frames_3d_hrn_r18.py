@@ -17,14 +17,15 @@ config.output = None
 config.embedding_size = 256    # Bernardo
 
 config.sample_rate = 1.0
-config.fp16 = True
+# config.fp16 = True       # original
+config.fp16 = False        # Bernardo
 config.momentum = 0.9
 config.weight_decay = 5e-4
 
 # config.batch_size = 128  # original
 # config.batch_size = 64   # Bernardo
-# config.batch_size = 32   # Bernardo
-config.batch_size = 16     # Bernardo
+config.batch_size = 32   # Bernardo
+# config.batch_size = 16     # Bernardo
 
 config.lr = 0.1
 

@@ -1,5 +1,6 @@
 from .iresnet import iresnet18, iresnet34, iresnet50, iresnet100, iresnet200
 from .mobilefacenet import get_mbf
+from ._3dpcnet import _3DPCNet
 
 
 def get_model(name, **kwargs):
@@ -87,6 +88,10 @@ def get_model(name, **kwargs):
         return VisionTransformer(
             img_size=112, patch_size=9, num_classes=num_features, embed_dim=1024, depth=48,
             num_heads=8, drop_path_rate=0.1, norm_layer="ln", mask_ratio=0, using_checkpoint=True)
+
+    elif name == "3dpcnet":
+        num_features = kwargs.get("num_features", 512)
+        return _3DPCNet('r18', num_features, **kwargs)
 
     else:
         raise ValueError()

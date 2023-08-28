@@ -1,6 +1,8 @@
 import torch
 import math
 
+# import pytorch3d
+from pytorch3d.loss import chamfer_distance
 
 class CombinedMarginLoss(torch.nn.Module):
     def __init__(self, 
@@ -98,3 +100,12 @@ class CosFace(torch.nn.Module):
         logits[index, labels[index].view(-1)] = final_target_logit
         logits = logits * self.s
         return logits
+
+
+class ChamferLoss(torch.nn.Module):
+    def __init__(self):
+        super(ChamferLoss, self).__init__()
+
+    def forward(self, true_pointcloud: torch.Tensor, pred_pointcloud: torch.Tensor):
+        chamfer_dist = chamfer_distance(true_pointcloud, pred_pointcloud)[0]
+        return chamfer_dist

@@ -164,6 +164,62 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
             print('num of faces', len(faces))
         return mesh
 
+
+    # Based on https://github.com/youngLBW/HRN/blob/main/util/util_.py#L343
+    def write_obj(self, save_path, vertices, faces=None, UVs=None, faces_uv=None, normals=None, faces_normal=None, texture_map=None, save_mtl=False, vertices_color=None):
+        save_dir = os.path.dirname(save_path)
+        save_name = os.path.splitext(os.path.basename(save_path))[0]
+
+        if save_mtl or texture_map is not None:
+            if texture_map is not None:
+                cv2.imwrite(os.path.join(save_dir, save_name + '.jpg'), texture_map)
+            with open(os.path.join(save_dir, save_name + '.mtl'), 'w') as wf:
+                wf.write('# Created by HRN\n')
+                wf.write('newmtl material_0\n')
+                wf.write('Ka 1.000000 0.000000 0.000000\n')
+                wf.write('Kd 1.000000 1.000000 1.000000\n')
+                wf.write('Ks 0.000000 0.000000 0.000000\n')
+                wf.write('Tr 0.000000\n')
+                wf.write('illum 0\n')
+                wf.write('Ns 0.000000\n')
+                wf.write('map_Kd {}\n'.format(save_name + '.jpg'))
+
+        with open(save_path, 'w') as wf:
+            if save_mtl or texture_map is not None:
+                wf.write("# Create by HRN\n")
+                wf.write("mtllib ./{}.mtl\n".format(save_name))
+
+            if vertices_color is not None:
+                for i, v in enumerate(vertices):
+                    wf.write('v {} {} {} {} {} {}\n'.format(v[0], v[1], v[2], vertices_color[i][0], vertices_color[i][1], vertices_color[i][2]))
+            else:
+                for v in vertices:
+                    wf.write('v {} {} {}\n'.format(v[0], v[1], v[2]))
+
+            if UVs is not None:
+                for uv in UVs:
+                    wf.write('vt {} {}\n'.format(uv[0], uv[1]))
+
+            if normals is not None:
+                for vn in normals:
+                    wf.write('vn {} {} {}\n'.format(vn[0], vn[1], vn[2]))
+
+            if faces is not None:
+                for ind, face in enumerate(faces):
+                    if faces_uv is not None or faces_normal is not None:
+                        if faces_uv is not None:
+                            face_uv = faces_uv[ind]
+                        else:
+                            face_uv = face
+                        if faces_normal is not None:
+                            face_normal = faces_normal[ind]
+                        else:
+                            face_normal = face
+                        row = 'f ' + ' '.join(['{}/{}/{}'.format(face[i], face_uv[i], face_normal[i]) for i in range(len(face))]) + '\n'
+                    else:
+                        row = 'f ' + ' '.join(['{}'.format(face[i]) for i in range(len(face))]) + '\n'
+                    wf.write(row)
+
     
     def flat_pc_axis_z(self, pc_data):
         for i in range(pc_data.shape[0]):
@@ -201,8 +257,12 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
 
         if label == 0:
             pc_data = self.flat_pc_axis_z(pc_data)
-
+        
+        # save_path = f'./pointcloud_index={index}_label={label}.obj'
+        # self.write_obj(save_path, pc_data)
+        
         return (rgb_data, pc_data, label)
+        # return (img_path, rgb_data, pc_path, pc_data, label)
 
 
     def __len__(self):
