@@ -45,7 +45,8 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
         self.protocol_data = ud.load_file_protocol(self.protocol_file_path)
 
         self.rgb_file_ext = '_input_face.jpg'
-        self.pc_file_ext = '_hrn_high_mesh.obj'
+        # self.pc_file_ext = '_hrn_high_mesh.obj'           # text file
+        self.pc_file_ext = '_hrn_high_mesh_10000points.npy' # binary file
         self.samples_list = ud.make_samples_list(self.protocol_data, self.frames_path_part, self.rgb_file_ext, self.pc_file_ext)
         
         assert len(self.protocol_data) == len(self.samples_list), 'Error, len(self.protocol_data) must be equals to len(self.samples_list)'
@@ -190,13 +191,17 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
             rgb_data = self.load_img(img_path)
             rgb_data = self.normalize_img(rgb_data)
 
-        # if pc_path.endswith('.obj'):
-        #     pc_data = self.read_obj(pc_path)['vertices']
-        #     pc_data = self.normalize_pc(pc_data)
-        # if label == 0:
-        #     pc_data = self.flat_pc_axis_z(pc_data)
-        pc_data = np.zeros(1)   # ONLY FOR TESTS
-        
+        if pc_path.endswith('.obj'):
+            pc_data = self.read_obj(pc_path)['vertices']
+        elif pc_path.endswith('.npy'):
+            pc_data = np.load(pc_path)
+            # pc_data = np.load(pc_path).astype(np.float32)
+
+        pc_data = self.normalize_pc(pc_data)
+
+        if label == 0:
+            pc_data = self.flat_pc_axis_z(pc_data)
+
         return (rgb_data, pc_data, label)
 
 
