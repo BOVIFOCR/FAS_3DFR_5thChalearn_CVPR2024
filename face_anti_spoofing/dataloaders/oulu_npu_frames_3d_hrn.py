@@ -227,6 +227,14 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
         return pc_data
 
 
+    def sample_points(self, arr, n=2500):
+        if n > len(arr):
+            return arr
+        indices = np.random.choice(len(arr), n, replace=False)
+        selected_elements = arr[indices]
+        return selected_elements
+
+
     def __getitem__(self, index):
         # idx = self.imgidx[index]
         # s = self.imgrec.read_idx(idx)
@@ -254,6 +262,7 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
             # pc_data = np.load(pc_path).astype(np.float32)
 
         pc_data = self.normalize_pc(pc_data)
+        pc_data = self.sample_points(pc_data, n=2500)
 
         if label == 0:
             pc_data = self.flat_pc_axis_z(pc_data)

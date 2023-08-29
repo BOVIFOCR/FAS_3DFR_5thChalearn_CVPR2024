@@ -24,8 +24,8 @@ config.weight_decay = 5e-4
 
 # config.batch_size = 128  # original
 # config.batch_size = 64   # Bernardo
-config.batch_size = 32   # Bernardo
-# config.batch_size = 16     # Bernardo
+config.batch_size = 32     # Bernardo
+# config.batch_size = 16   # Bernardo
 
 config.lr = 0.1
 
@@ -51,7 +51,8 @@ config.num_classes = 2         # (live or spoof) Bernardo
 config.num_image = 1800        # Bernardo
 
 # config.num_epoch = 20
-config.num_epoch = 50
+# config.num_epoch = 50
+config.num_epoch = 100
 
 config.warmup_epoch = 0
 # config.val_targets = ['lfw', 'cfp_fp', "agedb_30"]

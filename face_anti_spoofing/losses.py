@@ -107,5 +107,6 @@ class ChamferLoss(torch.nn.Module):
         super(ChamferLoss, self).__init__()
 
     def forward(self, true_pointcloud: torch.Tensor, pred_pointcloud: torch.Tensor):
-        chamfer_dist = chamfer_distance(true_pointcloud, pred_pointcloud)[0]
+        chamfer_dist = chamfer_distance(true_pointcloud, pred_pointcloud, \
+                                        point_reduction='sum')[0]
         return chamfer_dist

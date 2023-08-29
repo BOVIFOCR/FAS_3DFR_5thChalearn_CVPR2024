@@ -19,7 +19,7 @@ class CallBackVerification(object):
         self.highest_acc_list: List[float] = [0.0] * len(val_targets)
         self.ver_list: List[object] = []
         self.ver_name_list: List[str] = []
-        if self.rank is 0:
+        if self.rank == 0:
             self.init_dataset(val_targets=val_targets, data_dir=rec_prefix, image_size=image_size)
 
         self.summary_writer = summary_writer
@@ -143,7 +143,9 @@ class CallBackEpochLogging(object):
 
     def __call__(self,
                  global_step: int,
-                 loss: AverageMeter,
+                 reconst_loss: AverageMeter,
+                 class_loss: AverageMeter,
+                 total_loss: AverageMeter,
                  train_evaluator,
                  epoch: int,
                  fp16: bool,
@@ -171,21 +173,25 @@ class CallBackEpochLogging(object):
         if self.writer is not None:
             # self.writer.add_scalar('time_for_end', time_for_end, global_step)
             self.writer.add_scalar('learning_rate', learning_rate, epoch)
-            self.writer.add_scalar('loss/train_loss', loss.avg, epoch)
+            self.writer.add_scalar('loss/train_reconst_loss', reconst_loss.avg, epoch)
+            self.writer.add_scalar('loss/train_class_loss', class_loss.avg, epoch)
+            self.writer.add_scalar('loss/train_total_loss', total_loss.avg, epoch)
             self.writer.add_scalar('acc/train_acc', acc, epoch)
         if fp16:
-            msg = " Epoch: %d   Loss %.4f   Acc %.4f%%   LearningRate %.6f   Global Step: %d   " \
+            msg = " Epoch: %d   ReconstLoss %.4f   ClassLoss %.4f   TotalLoss %.4f   Acc %.4f%%   LearningRate %.6f   Global Step: %d   " \
                     "Fp16 Grad Scale: %2.f   Speed %.2f samples/sec   Required: %1.f hours" % (
-                        epoch, loss.avg, acc, learning_rate, global_step,
+                        epoch, reconst_loss.avg, class_loss.avg, total_loss.avg, acc, learning_rate, global_step,
                         grad_scaler.get_scale(), speed_total, time_for_end
                     )
         else:
-            msg = " Epoch: %d   Loss %.4f   Acc %.4f%%   LearningRate %.6f   Global Step: %d   Speed %.2f samples/sec   " \
+            msg = " Epoch: %d   ReconstLoss %.4f   ClassLoss %.4f   TotalLoss %.4f   Acc %.4f%%   LearningRate %.6f   Global Step: %d   Speed %.2f samples/sec   " \
                     "Required: %1.f hours" % (
-                        epoch, loss.avg, acc, learning_rate, global_step, speed_total, time_for_end
+                        epoch, reconst_loss.avg, class_loss.avg, total_loss.avg, acc, learning_rate, global_step, speed_total, time_for_end
                     )
         logging.info(msg)
-        loss.reset()
+        reconst_loss.reset()
+        class_loss.reset()
+        total_loss.reset()
 
         if self.init:
             self.tic = time.time()
