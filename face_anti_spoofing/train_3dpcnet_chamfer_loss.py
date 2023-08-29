@@ -263,7 +263,7 @@ def main(args):
 
             train_evaluator.update(pred_labels, local_labels)
 
-            if epoch % 10 == 0 and batch_idx == 0:
+            if (epoch % 10 == 0 or epoch == cfg.num_epoch-1) and batch_idx == 0:
                 path_dir_samples = os.path.join(cfg.output, f'samples/epoch={epoch}_batch={batch_idx}/train')
                 print('Saving train samples...')
                 save_sample(path_dir_samples, img, true_pointcloud, local_labels,
@@ -348,7 +348,7 @@ def validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluato
 
             val_evaluator.update(val_pred_labels, val_labels)
 
-            if epoch % 10 == 0 and val_batch_idx == 0:
+            if (epoch % 10 == 0 or epoch == cfg.num_epoch-1) and val_batch_idx == 0:
                 path_dir_samples = os.path.join(cfg.output, f'samples/epoch={epoch}_batch={val_batch_idx}/val')
                 print('Saving val samples...')
                 save_sample(path_dir_samples, val_img, val_pointcloud, val_labels,

@@ -52,7 +52,8 @@ config.num_image = 1800        # Bernardo
 
 # config.num_epoch = 20
 # config.num_epoch = 50
-config.num_epoch = 100
+# config.num_epoch = 100
+config.num_epoch = 200
 
 config.warmup_epoch = 0
 # config.val_targets = ['lfw', 'cfp_fp', "agedb_30"]
