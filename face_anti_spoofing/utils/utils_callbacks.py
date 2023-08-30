@@ -208,7 +208,8 @@ class EvaluatorLogging(object):
         self.num_batches: int = num_batches
         
         self.curr_idx = 0
-        self.all_pred_labels = torch.zeros((num_samples))
+        self.curr_batch = 0
+        self.all_pred_labels = torch.ones((num_samples))
         self.all_true_labels = torch.zeros((num_samples))
 
 
@@ -217,10 +218,11 @@ class EvaluatorLogging(object):
         self.all_pred_labels[self.curr_idx:self.curr_idx+pred_labels.size(0)] = pred_labels
         self.all_true_labels[self.curr_idx:self.curr_idx+true_labels.size(0)] = true_labels
         self.curr_idx += pred_labels.size(0)
+        self.curr_batch += 1
 
 
     def evaluate(self):
-        correct = (self.all_pred_labels == self.all_true_labels).sum().item()
+        correct = (self.all_pred_labels[:self.curr_idx] == self.all_true_labels[:self.curr_idx]).sum().item()
         total = self.all_pred_labels.size(0)
         accuracy = (correct / total) * 100
         return accuracy
@@ -228,5 +230,6 @@ class EvaluatorLogging(object):
 
     def reset(self):
         self.curr_idx = 0
-        self.all_pred_labels[:] = 0
+        self.curr_batch = 0
+        self.all_pred_labels[:] = 1
         self.all_true_labels[:] = 0
