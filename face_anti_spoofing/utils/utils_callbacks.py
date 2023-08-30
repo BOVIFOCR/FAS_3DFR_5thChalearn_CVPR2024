@@ -59,7 +59,7 @@ class CallBackVerification(object):
                 self.ver_name_list.append(name)
 
     def __call__(self, num_update, backbone: torch.nn.Module):
-        if self.rank is 0 and num_update > 0:
+        if self.rank == 0 and num_update > 0:
             backbone.eval()
             self.ver_test(backbone, num_update)
             backbone.train()
@@ -168,7 +168,7 @@ class CallBackEpochLogging(object):
         eta_sec = time_sec_avg * (self.total_step - global_step - 1)
         time_for_end = eta_sec/3600
 
-        acc = train_evaluator.evaluate()
+        metrics = train_evaluator.evaluate()
 
         if self.writer is not None:
             # self.writer.add_scalar('time_for_end', time_for_end, global_step)
@@ -176,17 +176,20 @@ class CallBackEpochLogging(object):
             self.writer.add_scalar('loss/train_reconst_loss', reconst_loss.avg, epoch)
             self.writer.add_scalar('loss/train_class_loss', class_loss.avg, epoch)
             self.writer.add_scalar('loss/train_total_loss', total_loss.avg, epoch)
-            self.writer.add_scalar('acc/train_acc', acc, epoch)
+            self.writer.add_scalar('acc/train_acc', metrics['acc'], epoch)
+            self.writer.add_scalar('apcer/train_apcer', metrics['apcer'], epoch)
+            self.writer.add_scalar('bpcer/train_bpcer', metrics['bpcer'], epoch)
+            self.writer.add_scalar('acer/train_acer', metrics['acer'], epoch)
         if fp16:
-            msg = " Epoch: %d   ReconstLoss %.4f   ClassLoss %.4f   TotalLoss %.4f   Acc %.4f%%   LearningRate %.6f   Global Step: %d   " \
+            msg = " Epoch: %d   ReconstLoss %.4f   ClassLoss %.4f   TotalLoss %.4f    acc: %.4f%%    apcer: %.4f%%    bpcer: %.4f%%    acer: %.4f%%   LR %.6f   Global Step: %d   " \
                     "Fp16 Grad Scale: %2.f   Speed %.2f samples/sec   Required: %1.f hours" % (
-                        epoch, reconst_loss.avg, class_loss.avg, total_loss.avg, acc, learning_rate, global_step,
+                        epoch, reconst_loss.avg, class_loss.avg, total_loss.avg, metrics['acc'], metrics['apcer'], metrics['bpcer'], metrics['acer'], learning_rate, global_step,
                         grad_scaler.get_scale(), speed_total, time_for_end
                     )
         else:
-            msg = " Epoch: %d   ReconstLoss %.4f   ClassLoss %.4f   TotalLoss %.4f   Acc %.4f%%   LearningRate %.6f   Global Step: %d   Speed %.2f samples/sec   " \
+            msg = " Epoch: %d   ReconstLoss %.4f   ClassLoss %.4f   TotalLoss %.4f    acc: %.4f%%    apcer: %.4f%%    bpcer: %.4f%%    acer: %.4f%%   LR %.6f   Global Step: %d   Speed %.2f samples/sec   " \
                     "Required: %1.f hours" % (
-                        epoch, reconst_loss.avg, class_loss.avg, total_loss.avg, acc, learning_rate, global_step, speed_total, time_for_end
+                        epoch, reconst_loss.avg, class_loss.avg, total_loss.avg, metrics['acc'], metrics['apcer'], metrics['bpcer'], metrics['acer'], learning_rate, global_step, speed_total, time_for_end
                     )
         logging.info(msg)
         reconst_loss.reset()
@@ -222,10 +225,49 @@ class EvaluatorLogging(object):
 
 
     def evaluate(self):
-        correct = (self.all_pred_labels[:self.curr_idx] == self.all_true_labels[:self.curr_idx]).sum().item()
-        total = self.all_pred_labels.size(0)
-        accuracy = (correct / total) * 100
-        return accuracy
+        pred_labels = self.all_pred_labels[:self.curr_idx]
+        true_labels = self.all_true_labels[:self.curr_idx]
+
+        tp = float(torch.sum(torch.logical_and(pred_labels, true_labels)))
+        fp = float(torch.sum(torch.logical_and(pred_labels, torch.logical_not(true_labels))))
+        tn = float(torch.sum(torch.logical_and(torch.logical_not(pred_labels), torch.logical_not(true_labels))))
+        fn = float(torch.sum(torch.logical_and(torch.logical_not(pred_labels), true_labels)))
+
+        tpr = 0 if (tp + fn == 0) else (tp / (tp + fn)) * 100.0
+        fpr = 0 if (fp + tn == 0) else (fp / (fp + tn)) * 100.0
+
+        tar = tpr
+        far = fpr
+        frr = 0 if (fn + tp == 0) else (fn / (fn + tp)) * 100.0
+
+        acc = (tp + tn) / float(pred_labels.size(0)) * 100.0
+
+        # source: https://chalearnlap.cvc.uab.cat/challenge/33/track/33/metrics/
+        # source: https://docs.openvino.ai/2023.0/omz_tools_accuracy_checker_metrics.html
+        apcer = 0 if (fp + tn == 0) else (fp / (fp + tn)) * 100.0
+        npcer = 0 if (fn + tp == 0) else (fn / (fn + tp)) * 100.0
+        bpcer = npcer
+        acer = (apcer + bpcer) / 2.0
+        hter = (far + frr) / 2.0
+
+        metrics = {'tp': tp,
+                   'fp': fp,
+                   'tn': tn,
+                   'fn': fn,
+                   'tpr': tpr,
+                   'fpr': fpr,
+                   'tar': tar,
+                   'far': far,
+                   'frr': frr,
+                   'acc': acc,
+                   'apcer': apcer,
+                   'npcer': npcer,
+                   'bpcer': bpcer,
+                   'acer': acer,
+                   'hter': hter
+                   }
+
+        return metrics
 
 
     def reset(self):

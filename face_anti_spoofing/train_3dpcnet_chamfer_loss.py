@@ -219,8 +219,6 @@ def main(args):
     total_loss_am = AverageMeter()
     amp = torch.cuda.amp.grad_scaler.GradScaler(growth_interval=100)
 
-    save_samples = False
-
     print(f'\nStarting training...')
     for epoch in range(start_epoch, cfg.num_epoch):
         if isinstance(train_loader, DataLoader):
@@ -354,14 +352,18 @@ def validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluato
                 save_sample(path_dir_samples, val_img, val_pointcloud, val_labels,
                             val_pred_pointcloud, val_pred_labels)
 
-        val_acc = val_evaluator.evaluate()
+        metrics = val_evaluator.evaluate()
 
         writer.add_scalar('loss/val_reconst_loss', val_reconst_loss_am.avg, epoch)
         writer.add_scalar('loss/val_class_loss', val_class_loss_am.avg, epoch)
         writer.add_scalar('loss/val_total_loss', val_total_loss_am.avg, epoch)
-        writer.add_scalar('acc/val_acc', val_acc, epoch)
+        writer.add_scalar('acc/val_acc', metrics['acc'], epoch)
+        writer.add_scalar('apcer/val_apcer', metrics['apcer'], epoch)
+        writer.add_scalar('bpcer/val_bpcer', metrics['bpcer'], epoch)
+        writer.add_scalar('acer/val_acer', metrics['acer'], epoch)
 
-        print('Validation:    val_ReconstLoss: %.4f    val_ClassLoss: %.4f    val_TotalLoss: %.4f    val_acc: %.4f%%' % (val_reconst_loss_am.avg, val_class_loss_am.avg, val_total_loss_am.avg, val_acc))
+        print('Validation:    val_ReconstLoss: %.4f    val_ClassLoss: %.4f    val_TotalLoss: %.4f    val_acc: %.4f%%    val_apcer: %.4f%%    val_bpcer: %.4f%%    val_acer: %.4f%%' %
+              (val_reconst_loss_am.avg, val_class_loss_am.avg, val_total_loss_am.avg, metrics['acc'], metrics['apcer'], metrics['bpcer'], metrics['acer']))
         val_reconst_loss_am.reset()
         val_class_loss_am.reset()
         val_total_loss_am.reset()
