@@ -105,3 +105,5 @@ ENV/
 
 
 face_anti_spoofing/work_dirs/*
+test.py
+
