@@ -68,6 +68,7 @@ def main(args):
     )
     
     wandb_logger = None
+    run_name = datetime.now().strftime("%y%m%d_%H%M") + f"_GPU{rank}"
     if cfg.using_wandb:
         import wandb
         # Sign in to wandb
@@ -77,7 +78,7 @@ def main(args):
             print("WandB Key must be provided in config file (base.py).")
             print(f"Config Error: {e}")
         # Initialize wandb
-        run_name = datetime.now().strftime("%y%m%d_%H%M") + f"_GPU{rank}"
+        # run_name = datetime.now().strftime("%y%m%d_%H%M") + f"_GPU{rank}"
         run_name = run_name if cfg.suffix_run_name is None else run_name + f"_{cfg.suffix_run_name}"
         try:
             wandb_logger = wandb.init(
@@ -286,17 +287,13 @@ def main(args):
                 })
 
             # print('Train:    train_loss:', loss_am.avg)
-            callback_logging(global_step, reconst_loss_am, class_loss_am, total_loss_am, train_evaluator, epoch, cfg.fp16, lr_scheduler.get_last_lr()[0], amp)
+            callback_logging(global_step, reconst_loss_am, class_loss_am, total_loss_am, train_evaluator,
+                             epoch, cfg.fp16, lr_scheduler.get_last_lr()[0], amp)
             reconst_loss_am.reset()
             class_loss_am.reset()
             total_loss_am.reset()
             train_evaluator.reset()
 
-            validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator, global_step, epoch, summary_writer, cfg, early_stopping)   # Bernardo
-            print('--------------')
-
-
-        if cfg.save_all_states:
             checkpoint = {
                 "epoch": epoch + 1,
                 "global_step": global_step,
@@ -305,17 +302,8 @@ def main(args):
                 "state_optimizer": opt.state_dict(),
                 "state_lr_scheduler": lr_scheduler.state_dict()
             }
-            torch.save(checkpoint, os.path.join(cfg.output, f"checkpoint_gpu_{rank}.pt"))
-
-        if rank == 0:
-            path_module = os.path.join(cfg.output, "model.pt")
-            torch.save(backbone.module.state_dict(), path_module)
-
-            if wandb_logger and cfg.save_artifacts:
-                artifact_name = f"{run_name}_E{epoch}"
-                model = wandb.Artifact(artifact_name, type='model')
-                model.add_file(path_module)
-                wandb_logger.log_artifact(model)
+            validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator,
+                     global_step, epoch, summary_writer, cfg, early_stopping, checkpoint, wandb_logger, run_name)   # Bernardo
                 
         if cfg.dali:
             train_loader.reset()
@@ -324,23 +312,15 @@ def main(args):
             print("Early stopping")
             break
 
+        print('--------------')
     # Train end
 
-
-    if rank == 0:
-        path_module = os.path.join(cfg.output, "model.pt")
-        torch.save(backbone.module.state_dict(), path_module)
-        
-        if wandb_logger and cfg.save_artifacts:
-            artifact_name = f"{run_name}_Final"
-            model = wandb.Artifact(artifact_name, type='model')
-            model.add_file(path_module)
-            wandb_logger.log_artifact(model)
 
 
 
 # Bernardo
-def validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator, global_step, epoch, writer, cfg, early_stopping):
+def validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator,
+             global_step, epoch, writer, cfg, early_stopping, checkpoint, wandb_logger, run_name):
     with torch.no_grad():
         module_partial_fc.eval()
         backbone.eval()
@@ -369,6 +349,9 @@ def validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluato
 
         metrics = val_evaluator.evaluate()
 
+        print('Validation:    val_ReconstLoss: %.4f    val_ClassLoss: %.4f    val_TotalLoss: %.4f    val_acc: %.4f%%    val_apcer: %.4f%%    val_bpcer: %.4f%%    val_acer: %.4f%%' %
+              (val_reconst_loss_am.avg, val_class_loss_am.avg, val_total_loss_am.avg, metrics['acc'], metrics['apcer'], metrics['bpcer'], metrics['acer']))
+
         writer.add_scalar('loss/val_reconst_loss', val_reconst_loss_am.avg, epoch)
         writer.add_scalar('loss/val_class_loss', val_class_loss_am.avg, epoch)
         writer.add_scalar('loss/val_total_loss', val_total_loss_am.avg, epoch)
@@ -378,12 +361,9 @@ def validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluato
         writer.add_scalar('acer/val_acer', metrics['acer'], epoch)
 
         smooth_loss = True
-        val_total_loss_smooth = early_stopping(val_total_loss_am.avg, smooth_loss)
+        val_total_loss_smooth = early_stopping(val_total_loss_am.avg, smooth_loss, cfg, checkpoint, epoch, wandb_logger, run_name)
         if smooth_loss:
             writer.add_scalar('loss/val_total_loss_smooth', val_total_loss_smooth, epoch)
-
-        print('Validation:    val_ReconstLoss: %.4f    val_ClassLoss: %.4f    val_TotalLoss: %.4f    val_acc: %.4f%%    val_apcer: %.4f%%    val_bpcer: %.4f%%    val_acer: %.4f%%' %
-              (val_reconst_loss_am.avg, val_class_loss_am.avg, val_total_loss_am.avg, metrics['acc'], metrics['apcer'], metrics['bpcer'], metrics['acer']))
 
         val_reconst_loss_am.reset()
         val_class_loss_am.reset()
@@ -411,6 +391,16 @@ def save_sample(path_dir_samples, img, true_pointcloud, local_labels, pred_point
         write_obj(path_pred_pc, pred_pointcloud[i])
 
 
+def save_model(checkpoint, path_save_model, cfg, wandb_logger, run_name, epoch):
+    print(f'Saving model \'{path_save_model}\'...')
+    torch.save(checkpoint, path_save_model)
+
+    if wandb_logger and cfg.save_artifacts:
+        import wandb
+        artifact_name = f"{run_name}_E{epoch}"
+        model = wandb.Artifact(artifact_name, type='model')
+        model.add_file(path_save_model)
+        wandb_logger.log_artifact(model)
 
 
 if __name__ == "__main__":

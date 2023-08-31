@@ -1,3 +1,4 @@
+import sys, os
 import numpy as np
 import math
 import torch
@@ -23,6 +24,7 @@ class EarlyStopping:
         self.verbose = verbose
         self.counter = 0
         self.best_score = None
+        self.best_model_found = False
         self.early_stop = False
         self.val_loss_min = np.Inf
         self.delta = delta
@@ -57,7 +59,7 @@ class EarlyStopping:
         return smoothed
 
 
-    def __call__(self, val_loss, smooth=True):
+    def __call__(self, val_loss, smooth, cfg, checkpoint, epoch, wandb_logger, run_name):
         if smooth:
             self.scores[self.mov_avg_idx] = val_loss
             self.mov_avg_idx += 1
@@ -78,16 +80,34 @@ class EarlyStopping:
         else:
             self.trace_func(f'EarlyStopping new best found: {score} (past: {self.best_score})')
             self.best_score = score
-            # self.save_checkpoint(val_loss, model)
             self.counter = 0
+        
+            path_best_model = os.path.join(cfg.output, f"best_model.pt")
+            self.save_model(checkpoint, path_best_model, cfg, wandb_logger, run_name, epoch)
+            
+        path_last_model = os.path.join(cfg.output, f"last_model.pt")
+        self.save_model(checkpoint, path_last_model, cfg, wandb_logger, run_name, epoch)
 
         return score
 
 
+    def save_model(self, checkpoint, path_save_model, cfg, wandb_logger, run_name, epoch):
+        print(f'Saving model \'{path_save_model}\'...')
+        torch.save(checkpoint, path_save_model)
 
+        if wandb_logger and cfg.save_artifacts:
+            import wandb
+            artifact_name = f"{run_name}_E{epoch}"
+            model = wandb.Artifact(artifact_name, type='model')
+            model.add_file(path_save_model)
+            wandb_logger.log_artifact(model)
+
+
+    '''
     def save_checkpoint(self, val_loss, model):
-        '''Saves model when validation loss decrease.'''
+        # Saves model when validation loss decrease.
         if self.verbose:
             self.trace_func(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
         torch.save(model.state_dict(), self.path)
         self.val_loss_min = val_loss
+    '''
