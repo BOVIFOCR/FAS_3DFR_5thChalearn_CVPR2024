@@ -22,6 +22,11 @@ from utils.utils_logging import AverageMeter, init_logging
 from utils.utils_pointcloud import read_obj, write_obj
 from torch.distributed.algorithms.ddp_comm_hooks.default_hooks import fp16_compress_hook
 
+# from ignite.engine import Engine, Events
+# from ignite.handlers import EarlyStopping
+from utils.pytorchtools import EarlyStopping
+
+
 # Commented by Bernardo in order to use torch==1.10.1
 # assert torch.__version__ >= "1.12.0", "In order to enjoy the features of the new torch, \
 # we have upgraded the torch to 1.12.0. torch before than 1.12.0 may not work in the future."
@@ -173,7 +178,7 @@ def main(args):
 
     cfg.total_batch_size = cfg.batch_size * world_size
     cfg.warmup_step = cfg.num_image // cfg.total_batch_size * cfg.warmup_epoch
-    cfg.total_step = cfg.num_image // cfg.total_batch_size * cfg.num_epoch
+    cfg.total_step = cfg.num_image // cfg.total_batch_size * cfg.max_epoch
 
     lr_scheduler = PolynomialLRWarmup(
         optimizer=opt,
@@ -219,8 +224,11 @@ def main(args):
     total_loss_am = AverageMeter()
     amp = torch.cuda.amp.grad_scaler.GradScaler(growth_interval=100)
 
+    patience = 30
+    early_stopping = EarlyStopping(patience=patience, verbose=True, delta=0.01, max_epochs=cfg.max_epoch)
+
     print(f'\nStarting training...')
-    for epoch in range(start_epoch, cfg.num_epoch):
+    for epoch in range(start_epoch, cfg.max_epoch):
         if isinstance(train_loader, DataLoader):
             train_loader.sampler.set_epoch(epoch)
         # for _, (img, local_labels) in enumerate(train_loader):                          # original
@@ -261,7 +269,7 @@ def main(args):
 
             train_evaluator.update(pred_labels, local_labels)
 
-            if (epoch % 10 == 0 or epoch == cfg.num_epoch-1) and batch_idx == 0:
+            if (epoch % 10 == 0 or epoch == cfg.max_epoch-1) and batch_idx == 0:
                 path_dir_samples = os.path.join(cfg.output, f'samples/epoch={epoch}_batch={batch_idx}/train')
                 print('Saving train samples...')
                 save_sample(path_dir_samples, img, true_pointcloud, local_labels,
@@ -284,7 +292,7 @@ def main(args):
             total_loss_am.reset()
             train_evaluator.reset()
 
-            validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator, global_step, epoch, summary_writer, cfg)   # Bernardo
+            validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator, global_step, epoch, summary_writer, cfg, early_stopping)   # Bernardo
             print('--------------')
 
 
@@ -312,6 +320,13 @@ def main(args):
         if cfg.dali:
             train_loader.reset()
 
+        if early_stopping.early_stop:
+            print("Early stopping")
+            break
+
+    # Train end
+
+
     if rank == 0:
         path_module = os.path.join(cfg.output, "model.pt")
         torch.save(backbone.module.state_dict(), path_module)
@@ -325,7 +340,7 @@ def main(args):
 
 
 # Bernardo
-def validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator, global_step, epoch, writer, cfg):
+def validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator, global_step, epoch, writer, cfg, early_stopping):
     with torch.no_grad():
         module_partial_fc.eval()
         backbone.eval()
@@ -346,7 +361,7 @@ def validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluato
 
             val_evaluator.update(val_pred_labels, val_labels)
 
-            if (epoch % 10 == 0 or epoch == cfg.num_epoch-1) and val_batch_idx == 0:
+            if (epoch % 10 == 0 or epoch == cfg.max_epoch-1) and val_batch_idx == 0:
                 path_dir_samples = os.path.join(cfg.output, f'samples/epoch={epoch}_batch={val_batch_idx}/val')
                 print('Saving val samples...')
                 save_sample(path_dir_samples, val_img, val_pointcloud, val_labels,
@@ -362,8 +377,14 @@ def validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluato
         writer.add_scalar('bpcer/val_bpcer', metrics['bpcer'], epoch)
         writer.add_scalar('acer/val_acer', metrics['acer'], epoch)
 
+        smooth_loss = True
+        val_total_loss_smooth = early_stopping(val_total_loss_am.avg, smooth_loss)
+        if smooth_loss:
+            writer.add_scalar('loss/val_total_loss_smooth', val_total_loss_smooth, epoch)
+
         print('Validation:    val_ReconstLoss: %.4f    val_ClassLoss: %.4f    val_TotalLoss: %.4f    val_acc: %.4f%%    val_apcer: %.4f%%    val_bpcer: %.4f%%    val_acer: %.4f%%' %
               (val_reconst_loss_am.avg, val_class_loss_am.avg, val_total_loss_am.avg, metrics['acc'], metrics['apcer'], metrics['bpcer'], metrics['acer']))
+
         val_reconst_loss_am.reset()
         val_class_loss_am.reset()
         val_total_loss_am.reset()
