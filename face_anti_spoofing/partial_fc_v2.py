@@ -127,8 +127,8 @@ class PartialFC_V2(torch.nn.Module):
         batch_size = local_embeddings.size(0)
         if self.last_batch_size == 0:
             self.last_batch_size = batch_size
-        assert self.last_batch_size == batch_size, (
-            f"last batch size do not equal current batch size: {self.last_batch_size} vs {batch_size}")
+        # assert self.last_batch_size == batch_size, (
+        #     f"last batch size do not equal current batch size: {self.last_batch_size} vs {batch_size}")
 
         _gather_embeddings = [
             torch.zeros((batch_size, self.embedding_size)).cuda()
@@ -173,7 +173,7 @@ class PartialFC_V2(torch.nn.Module):
         loss = self.dist_cross_entropy(logits, labels)
         probabilities = torch.nn.functional.softmax(logits, dim=1)
         pred_labels = torch.argmax(probabilities, dim=1)
-        return loss, pred_labels
+        return loss, probabilities, pred_labels
 
 
 

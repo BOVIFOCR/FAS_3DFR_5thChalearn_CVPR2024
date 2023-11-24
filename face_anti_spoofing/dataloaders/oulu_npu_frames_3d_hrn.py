@@ -48,6 +48,7 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
         # self.pc_file_ext = '_hrn_high_mesh.obj'           # text file
         self.pc_file_ext = '_hrn_high_mesh_10000points.npy' # binary file
         self.samples_list = ud.make_samples_list(self.protocol_data, self.frames_path_part, self.rgb_file_ext, self.pc_file_ext)
+        self.indices = np.random.choice(10000, 2500, replace=False)
         
         assert len(self.protocol_data) == len(self.samples_list), 'Error, len(self.protocol_data) must be equals to len(self.samples_list)'
 
@@ -230,7 +231,8 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
     def sample_points(self, arr, n=2500):
         if n > len(arr):
             return arr
-        indices = np.random.choice(len(arr), n, replace=False)
+        # indices = np.random.choice(len(arr), n, replace=False)
+        indices = self.indices
         selected_elements = arr[indices]
         return selected_elements
 

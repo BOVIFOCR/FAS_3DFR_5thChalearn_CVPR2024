@@ -241,7 +241,7 @@ def main(args):
             # loss: torch.Tensor = module_partial_fc(local_embeddings, local_labels)   # original
             pred_pointcloud, pred_logits = backbone(img)
             reconst_loss = chamfer_loss(true_pointcloud, pred_pointcloud)              # Bernardo
-            class_loss, pred_labels = module_partial_fc(pred_logits, local_labels)     # Bernardo
+            class_loss, probabilities, pred_labels = module_partial_fc(pred_logits, local_labels)     # Bernardo
             total_loss = reconst_loss + class_loss
 
             if cfg.fp16:
@@ -332,7 +332,7 @@ def validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluato
         for val_batch_idx, (val_img, val_pointcloud, val_labels) in enumerate(val_loader):
             val_pred_pointcloud, val_pred_logits = backbone(val_img)
             val_loss_reconst = chamfer_loss(val_pointcloud, val_pred_pointcloud)
-            val_loss_class, val_pred_labels = module_partial_fc(val_pred_logits, val_labels)
+            val_loss_class, val_probabilities, val_pred_labels = module_partial_fc(val_pred_logits, val_labels)
             val_total_loss = val_loss_reconst + val_loss_class
             
             val_reconst_loss_am.update(val_loss_reconst.item(), 1)
