@@ -1,3 +1,24 @@
+## TRAIN 3DPC-NET (BOVIFOCR)
+
+#### 1. Clone this repo:
+```
+git clone https://github.com/BOVIFOCR/3DPC-Net.git
+cd 3DPC-Net/face_anti_spoofing
+```
+
+#### 2. Create conda env and install python libs:
+```
+export CONDA_ENV=bjgbiesseck_3dpcnet_py39
+conda create -n $CONDA_ENV python=3.9
+conda activate $CONDA_ENV
+conda install pytorch=1.13.0 torchvision pytorch-cuda=11.6 -c pytorch -c nvidia
+conda install -c fvcore -c iopath -c conda-forge fvcore iopath
+conda install -c bottler nvidiacub
+conda install pytorch3d -c pytorch3d
+```
+
+<br> <br> <br> 
+
 # Distributed Arcface Training in Pytorch
 
 The "arcface_torch" repository is the official implementation of the ArcFace algorithm. It supports distributed and sparse training with multiple distributed training examples, including several memory-saving techniques such as mixed precision training and gradient checkpointing. It also supports training for ViT models and datasets including WebFace42M and Glint360K, two of the largest open-source datasets. Additionally, the repository comes with a built-in tool for converting to ONNX format, making it easy to submit to MFR evaluation systems.
