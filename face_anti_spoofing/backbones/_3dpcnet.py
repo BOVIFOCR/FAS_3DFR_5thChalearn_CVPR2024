@@ -30,9 +30,28 @@ class _3DPCNet(nn.Module):
             self.encoder = iresnet2060(False, **kwargs)
 
         # self.decoder = self.get_decoder_mlp(self.face_embedd_size, self.num_output_points, self.num_axis)
-        self.decoder = self.get_decoder_ConvTranspose2d(input_shape=(1, self.face_embedd_size), output_shape=(self.num_axis, self.num_output_points))
+        # self.decoder = self.get_decoder_ConvTranspose2d(input_shape=(1, self.face_embedd_size), output_shape=(self.num_axis, self.num_output_points))
+        self.decoder = self.get_decoder_Conv1x1(input_shape=(1, self.face_embedd_size), output_shape=(self.num_axis, self.num_output_points))
         self.classifier = self.get_classifier(self.num_output_points, self.num_axis, num_classes=2)
         self._initialize_weights()
+
+
+    def get_decoder_Conv1x1(self, input_shape=(1, 256), output_shape=(3, 2500)):
+        layers = []
+
+        # layer 1
+        k_size = (1, 1)
+        layers.append(nn.Conv2d(in_channels=1, out_channels=129, kernel_size=k_size, stride=1, bias=False))
+        # layers.append(nn.BatchNorm2d(129, eps=1e-05))
+        layers.append(nn.ReLU(True))
+
+        # layer 2
+        o_channels = output_shape[0]
+        layers.append(nn.ConvTranspose2d(in_channels=129, out_channels=o_channels, kernel_size=(1, 1), stride=1))
+        # layers.append(nn.BatchNorm2d(output_shape[0], eps=1e-05))
+        layers.append(nn.Tanh())
+
+        return nn.Sequential(*layers)
 
 
     def get_decoder_ConvTranspose2d(self, input_shape=(1, 256), output_shape=(3, 2500)):
