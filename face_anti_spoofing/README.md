@@ -11,11 +11,23 @@ cd 3DPC-Net/face_anti_spoofing
 export CONDA_ENV=bjgbiesseck_3dpcnet_py39
 conda create -n $CONDA_ENV python=3.9
 conda activate $CONDA_ENV
+conda env config vars set CUDA_HOME="/usr/local/cuda-11.6"; conda deactivate; conda activate $CONDA_ENV
+conda env config vars set LD_LIBRARY_PATH="$CUDA_HOME/lib64"; conda deactivate; conda activate $CONDA_ENV
+conda env config vars set PATH="$CUDA_HOME:$CUDA_HOME/bin:$LD_LIBRARY_PATH:$PATH"; conda deactivate; conda activate $CONDA_ENV
+
 conda install pytorch=1.13.0 torchvision pytorch-cuda=11.6 -c pytorch -c nvidia
 conda install -c fvcore -c iopath -c conda-forge fvcore iopath
 conda install -c bottler nvidiacub
 conda install pytorch3d -c pytorch3d
+pip3 install -r requirements.txt
 ```
+
+#### 3. Train model:
+```
+export CUDA_VISIBLE_DEVICES=0; python train_3dpcnet_chamfer_loss.py --config configs/oulu-npu_frames_3d_hrn_r18.py
+```
+
+
 
 <br> <br> <br> 
 
