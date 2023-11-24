@@ -1,3 +1,5 @@
+import os
+nodename = os.uname().nodename
 from easydict import EasyDict as edict
 
 # make training faster
@@ -38,8 +40,14 @@ config.dali = False
 # config.rec = "/train_tmp/ms1m-retinaface-t1"                                                # original
 config.train_dataset = 'oulu-npu_frames_3d_hrn'                                               # Bernardo
 config.protocol_id = 1                                                                        # Bernardo
-config.dataset_path = '/experiments/BOVIFOCR_project/datasets/bjgbiesseck/liveness/oulu-npu'  # Bernardo
-config.frames_path = '/datasets1/bjgbiesseck/liveness/HRN_3D_reconstruction/oulu-npu_frames'  # Bernardo
+
+if nodename == 'duo':
+    config.dataset_path = '/experiments/BOVIFOCR_project/datasets/bjgbiesseck/liveness/oulu-npu'  # Bernardo
+    config.frames_path = '/datasets1/bjgbiesseck/liveness/HRN_3D_reconstruction/oulu-npu_frames'  # Bernardo
+
+elif nodename == 'diolkos':
+    config.dataset_path = '/nobackup/unico/datasets/liveness/oulu-npu'                                   # Bernardo
+    config.frames_path = '/nobackup/unico/datasets/liveness/3D_face_reconstruction/HRN/oulu-npu_frames'  # Bernardo
 
 # config.img_size = 112        # Bernardo
 config.img_size = 224          # Bernardo

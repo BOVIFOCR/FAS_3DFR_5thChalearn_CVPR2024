@@ -276,7 +276,6 @@ def main(args):
                 save_sample(path_dir_samples, img, true_pointcloud, local_labels,
                             pred_pointcloud, pred_labels)
 
-
         with torch.no_grad():
             if wandb_logger:
                 wandb_logger.log({

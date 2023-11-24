@@ -2,7 +2,10 @@ import sys
 import torch
 import torch.nn as nn
 
-from .iresnet import iresnet18, iresnet34, iresnet50, iresnet100, iresnet200
+try:
+    from .iresnet import iresnet18, iresnet34, iresnet50, iresnet100, iresnet200
+except:
+    from iresnet import iresnet18, iresnet34, iresnet50, iresnet100, iresnet200
 
 
 
@@ -31,24 +34,27 @@ class _3DPCNet(nn.Module):
 
         # self.decoder = self.get_decoder_mlp(self.face_embedd_size, self.num_output_points, self.num_axis)
         # self.decoder = self.get_decoder_ConvTranspose2d(input_shape=(1, self.face_embedd_size), output_shape=(self.num_axis, self.num_output_points))
-        self.decoder = self.get_decoder_Conv1x1(input_shape=(1, self.face_embedd_size), output_shape=(self.num_axis, self.num_output_points))
+        self.decoder = self.get_decoder_Conv1x1(input_shape=(1, self.face_embedd_size), output_shape=(1, self.num_axis, self.num_output_points))
         self.classifier = self.get_classifier(self.num_output_points, self.num_axis, num_classes=2)
         self._initialize_weights()
 
 
-    def get_decoder_Conv1x1(self, input_shape=(1, 256), output_shape=(3, 2500)):
+    def get_decoder_Conv1x1(self, input_shape=(1, 256), output_shape=(1, 3, 2500)):
         layers = []
 
         # layer 1
-        k_size = (1, 1)
-        layers.append(nn.Conv2d(in_channels=1, out_channels=129, kernel_size=k_size, stride=1, bias=False))
-        # layers.append(nn.BatchNorm2d(129, eps=1e-05))
+        conv1_ksize = 129
+        pool1_ksize = 25
+        layers.append(nn.Conv1d(in_channels=input_shape[0], out_channels=output_shape[2], kernel_size=conv1_ksize, stride=1, padding=0, bias=False))
+        layers.append(nn.BatchNorm1d(output_shape[2], eps=1e-05))
         layers.append(nn.ReLU(True))
+        layers.append(nn.MaxPool1d(pool1_ksize))
+        # layers.append(nn.AvgPool1d(pool1_ksize))
 
         # layer 2
-        o_channels = output_shape[0]
-        layers.append(nn.ConvTranspose2d(in_channels=129, out_channels=o_channels, kernel_size=(1, 1), stride=1))
-        # layers.append(nn.BatchNorm2d(output_shape[0], eps=1e-05))
+        conv2_ksize = 3
+        layers.append(nn.Conv1d(in_channels=output_shape[2], out_channels=output_shape[2], kernel_size=conv2_ksize, stride=1, padding=0, bias=False))
+        layers.append(nn.BatchNorm1d(output_shape[2], eps=1e-05))
         layers.append(nn.Tanh())
 
         return nn.Sequential(*layers)
@@ -114,15 +120,10 @@ class _3DPCNet(nn.Module):
 
 
     def forward(self, x):
-        def _regress_pointcloud(x):
-            x = self.encoder(x)              # x.shape = (batch, 256)
-            x = x.unsqueeze(1)               # x.shape = (batch, 1, 256)
-            x = x.unsqueeze(3)               # x.shape = (batch, 1, 256, 1)
-
-            x = self.decoder(x)              # x.shape = (batch, 3, 2500, 1)
-            x = x.squeeze(3)                 # x.shape = (batch, 3, 2500)
-            x = torch.permute(x, (0, 2, 1))  # x.shape = (batch, 2500, 3)
-
+        def _regress_pointcloud(x):    # input     -> x.shape = (batch, 3, 224, 224)
+            x = self.encoder(x)        # encoder   -> x.shape = (batch, 256)
+            x = x.unsqueeze(1)         # unsqueeze -> x.shape = (batch, 1, 256)
+            x = self.decoder(x)        # decoder   -> x.shape = (batch, 2500, 3)
             return x
 
         def _get_logits(x):
@@ -140,3 +141,13 @@ class _3DPCNet(nn.Module):
                 return _forward(x)
         else:
             return _forward(x)
+
+
+
+if __name__ == '__main__':
+    embedd = torch.zeros((32, 1, 256, 1))
+    print('embedd.size():', embedd.size())
+
+    layer1 = nn.Conv2d(in_channels=1, out_channels=2500, kernel_size=(129,1), stride=1, padding=0, bias=False)
+    l1_out = layer1(embedd)
+    print('l1_out.size():', l1_out.size())
