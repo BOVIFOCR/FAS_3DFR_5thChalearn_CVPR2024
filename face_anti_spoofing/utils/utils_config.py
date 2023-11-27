@@ -1,5 +1,6 @@
 import importlib
 import os.path as osp
+from datetime import datetime
 
 
 def get_config(config_file):
@@ -11,6 +12,7 @@ def get_config(config_file):
     config = importlib.import_module("configs.%s" % temp_module_name)
     job_cfg = config.config
     cfg.update(job_cfg)
+    date_time = datetime.today().strftime('%Y%m%d_%H%M%S')
     if cfg.output is None:
         # cfg.output = osp.join('work_dirs', temp_module_name)
         cfg.output = osp.join('work_dirs', temp_module_name
@@ -21,5 +23,6 @@ def get_config(config_file):
                               + f'_lr={cfg.lr}'
                               + f'_wd={cfg.weight_decay}'
                               + f'_embedd={cfg.embedding_size}'
+                              + f'_{date_time}'
                               )
     return cfg
