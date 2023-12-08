@@ -1,4 +1,5 @@
 import os, sys
+import glob
 import numpy as np
 import cv2
 from PIL import Image
@@ -42,6 +43,15 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
 
         self.frames_path_part = self.root_dir_part.replace(root_dir, frames_path)
 
+        if not os.path.exists(self.protocol_file_path):
+            prot_dir, prot_file = os.path.dirname(self.protocol_file_path), os.path.basename(self.protocol_file_path)
+            prot_file_name, prot_file_ext = prot_file.split('.')
+            pattern_protocol_file = os.path.join(prot_dir, prot_file_name+'*'+str(protocol_id)+'.'+prot_file_ext)
+            self.protocol_file_path = glob.glob(pattern_protocol_file)
+            assert len(self.protocol_file_path) > 0, f'Error, no protocol found with protocol \'{pattern_protocol_file}\''
+            self.protocol_file_path = self.protocol_file_path[0]
+            # print('self.protocol_file_path:', self.protocol_file_path)
+            # sys.exit(0)
         self.protocol_data = ud.load_file_protocol(self.protocol_file_path)
 
         self.rgb_file_ext = '_input_face.jpg'
