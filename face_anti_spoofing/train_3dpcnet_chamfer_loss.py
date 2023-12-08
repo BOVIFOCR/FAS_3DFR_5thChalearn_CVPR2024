@@ -321,8 +321,8 @@ def main(args):
 def validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator,
              global_step, epoch, writer, cfg, early_stopping, checkpoint, wandb_logger, run_name):
     with torch.no_grad():
-        module_partial_fc.eval()
-        backbone.eval()
+        # module_partial_fc.eval()
+        # backbone.eval()
         val_evaluator.reset()
 
         val_reconst_loss_am = AverageMeter()

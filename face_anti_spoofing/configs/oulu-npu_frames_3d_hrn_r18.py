@@ -49,6 +49,10 @@ elif nodename == 'diolkos':
     config.dataset_path = '/nobackup/unico/datasets/liveness/oulu-npu'                                   # Bernardo
     config.frames_path = '/nobackup/unico/datasets/liveness/3D_face_reconstruction/HRN/oulu-npu_frames'  # Bernardo
 
+elif nodename == 'peixoto':
+    config.dataset_path = '/nobackup1/bjgbiesseck/datasets/liveness/oulu-npu'                          # Bernardo
+    config.frames_path = '/nobackup1/bjgbiesseck/datasets/3D_face_reconstruction/HRN/oulu-npu_frames'  # Bernardo
+
 # config.img_size = 112        # Bernardo
 config.img_size = 224          # Bernardo
 
