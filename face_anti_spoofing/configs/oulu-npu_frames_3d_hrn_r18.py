@@ -39,10 +39,10 @@ config.dali = False
 
 # config.rec = "/train_tmp/ms1m-retinaface-t1"                                                # original
 config.train_dataset = 'oulu-npu_frames_3d_hrn'                                               # Bernardo
-# config.protocol_id = 1                                                                        # Bernardo
+config.protocol_id = 1                                                                        # Bernardo
 # config.protocol_id = 2
 # config.protocol_id = 3
-config.protocol_id = 4
+# config.protocol_id = 4
 
 if nodename == 'duo':
     config.dataset_path = '/experiments/BOVIFOCR_project/datasets/bjgbiesseck/liveness/oulu-npu'  # Bernardo
