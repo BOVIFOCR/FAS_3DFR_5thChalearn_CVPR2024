@@ -17,12 +17,13 @@ def get_config(config_file):
         # cfg.output = osp.join('work_dirs', temp_module_name)
         cfg.output = osp.join('work_dirs', temp_module_name
                               + (f'_prot={cfg.protocol_id}' if hasattr(cfg, 'protocol_id') else '')
-                              + f'_imgsize={cfg.img_size}'
-                              + f'_maxepoch={cfg.max_epoch}'
-                              + f'_batch={cfg.batch_size}'
-                              + f'_lr={cfg.lr}'
-                              + f'_wd={cfg.weight_decay}'
-                              + f'_embedd={cfg.embedding_size}'
-                              + f'_{date_time}'
+                              + (f'_fpv={cfg.frames_per_video}' if hasattr(cfg, 'frames_per_video') else '_fpv=1')
+                              +  f'_imgsize={cfg.img_size}'
+                              +  f'_maxepoch={cfg.max_epoch}'
+                              +  f'_batch={cfg.batch_size}'
+                              +  f'_lr={cfg.lr}'
+                              +  f'_wd={cfg.weight_decay}'
+                              +  f'_embedd={cfg.embedding_size}'
+                              +  f'_{date_time}'
                               )
     return cfg

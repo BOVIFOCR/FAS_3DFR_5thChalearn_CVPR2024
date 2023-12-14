@@ -1,5 +1,6 @@
 import os, sys
 import glob
+import time
 
 
 def load_file_protocol(file_path):
@@ -43,25 +44,55 @@ def find_neighbor_file(path_file, neighbor_ext):
     return neighbor_path[0]
 
 
-def make_samples_list(protocol_data, frames_path_part, rgb_file_ext, pc_file_ext):
-    samples_list = [None] * len(protocol_data)
+def count_all_frames(protocol_data, frames_path_part, rgb_file_ext):
+    num_frames = 0
+    for i, (label, video_name) in enumerate(protocol_data):
+        rgb_file_pattern = os.path.join(frames_path_part, video_name+'*', '*'+rgb_file_ext)
+        rgb_file_paths = glob.glob(rgb_file_pattern)
+        num_frames += len(rgb_file_paths)
+        print(f'Counting frames - video: {i}/{len(protocol_data)-1} - num_frames: {num_frames}', end='\r')
+    print('')
+    return num_frames
+
+
+def make_samples_list(protocol_data=[], frames_per_video=1, frames_path_part='', rgb_file_ext='', pc_file_ext=''):
+    # samples_list = [None] * len(protocol_data)
+    if frames_per_video > 0:
+        num_frames = frames_per_video * len(protocol_data)
+    else:
+        num_frames = count_all_frames(protocol_data, frames_path_part, rgb_file_ext)
+    samples_list = [None] * num_frames
+
+    global_idx = 0
     for i, (label, video_name) in enumerate(protocol_data):
         # print('label:', label, '    video_name:', video_name)
         rgb_file_pattern = os.path.join(frames_path_part, video_name+'*', '*'+rgb_file_ext)
-        rgb_file_path = glob.glob(rgb_file_pattern)
-        if len(rgb_file_path) == 0:
+        rgb_file_paths = glob.glob(rgb_file_pattern)
+        if len(rgb_file_paths) == 0:
             raise Exception(f'Error, no file \'{rgb_file_pattern}\' found in dir \'{frames_path_part}\'')
-        rgb_file_path = rgb_file_path[0]
-        # print('rgb_file_path:', rgb_file_path)
-        
-        pc_file_pattern = os.path.join(frames_path_part, video_name+'*', '*'+pc_file_ext)
-        pc_file_path = glob.glob(pc_file_pattern)
-        if len(pc_file_path) == 0:
-            raise Exception(f'Error, no file \'{pc_file_path}\' found in dir \'{frames_path_part}\'')
-        pc_file_path = pc_file_path[0]
-        # print('pc_file_path:', pc_file_path)
+        # rgb_file_path = rgb_file_path[0]
+        for j, rgb_file_path in enumerate(rgb_file_paths):
+            print(f'\'video: {i}/{len(protocol_data)-1}  -  sample: {j}/{len(rgb_file_paths)-1}  -  global_idx: {global_idx}/{num_frames-1}\'', end='\r')
 
-        samples_list[i] = (rgb_file_path, pc_file_path, label)
-        # print('------------------')
-        # sys.exit(0)
+            dir_sample = os.path.dirname(rgb_file_path)
+            # print('rgb_file_path:', rgb_file_path)
+            # print('dir_sample:', dir_sample)
+            # sys.exit(0)
+
+            pc_file_pattern = os.path.join(dir_sample, '*'+pc_file_ext)
+            pc_file_path = glob.glob(pc_file_pattern)
+            if len(pc_file_path) == 0:
+                raise Exception(f'Error, no file \'{pc_file_path}\' found in dir \'{frames_path_part}\'')
+            pc_file_path = pc_file_path[0]
+            # print('pc_file_pattern:', pc_file_pattern)
+            # print('pc_file_path:', pc_file_path)
+            # sys.exit(0)
+
+            one_sample = (rgb_file_path, pc_file_path, label)
+            # samples_list.append(one_sample)
+            samples_list[global_idx] = one_sample
+
+            global_idx += 1
+    print('')
+
     return samples_list

@@ -10,7 +10,7 @@ from . import utils_dataloaders as ud
 
 
 class OULU_NPU_FRAMES_3D_HRN(Dataset):
-    def __init__(self, root_dir, protocol_id, frames_path, img_size, part='train', local_rank=0, transform=None):
+    def __init__(self, root_dir, protocol_id, frames_path, img_size, frames_per_video=1, part='train', role='train', percent=0.6, local_rank=0, transform=None):
         super(OULU_NPU_FRAMES_3D_HRN, self).__init__()
         # self.transform = transform
         # self.root_dir = root_dir
@@ -27,8 +27,9 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
         #     self.imgidx = np.array(list(self.imgrec.keys))
 
         self.img_size = img_size
+        self.frames_per_video = frames_per_video
         self.protocols_path = os.path.join(root_dir, 'Protocols', 'Protocol_'+str(protocol_id))
-        
+
         if part == 'train':
             self.root_dir_part = os.path.join(root_dir, 'train')
             self.protocol_file_path = os.path.join(self.protocols_path, 'Train.txt')
@@ -54,13 +55,25 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
             # sys.exit(0)
         self.protocol_data = ud.load_file_protocol(self.protocol_file_path)
 
+        if percent < 1:
+            if role == 'train':
+                idx_start = 0
+                idx_end = int(len(self.protocol_data) * 0.6)
+            elif role == 'val' or role == 'validation' or role == 'dev' or role == 'development':
+                idx_start = int(len(self.protocol_data) * 0.6)
+                idx_end = int(len(self.protocol_data) * 0.8)
+            elif role == 'test':
+                idx_start = int(len(self.protocol_data) * 0.8)
+                idx_end = len(self.protocol_data)
+            self.protocol_data = self.protocol_data[idx_start:idx_end]
+
         self.rgb_file_ext = '_input_face.jpg'
         # self.pc_file_ext = '_hrn_high_mesh.obj'           # text file
         self.pc_file_ext = '_hrn_high_mesh_10000points.npy' # binary file
-        self.samples_list = ud.make_samples_list(self.protocol_data, self.frames_path_part, self.rgb_file_ext, self.pc_file_ext)
+        self.samples_list = ud.make_samples_list(self.protocol_data, frames_per_video, self.frames_path_part, self.rgb_file_ext, self.pc_file_ext)
         self.indices = np.random.choice(10000, 2500, replace=False)
         
-        assert len(self.protocol_data) == len(self.samples_list), 'Error, len(self.protocol_data) must be equals to len(self.samples_list)'
+        # assert len(self.protocol_data) == len(self.samples_list), 'Error, len(self.protocol_data) must be equals to len(self.samples_list)'
 
 
     def normalize_img(self, img):

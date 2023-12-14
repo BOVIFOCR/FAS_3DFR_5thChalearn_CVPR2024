@@ -27,10 +27,13 @@ def get_dataloader(
     part,           # 'train', 'val' or 'test'
     local_rank,
     batch_size,
+    frames_per_video = 1,
     dali = False,
     dali_aug = False,
     seed = 2048,
     num_workers = 2,
+    role = 'train',
+    percent = 1.0
     ) -> Iterable:
 
     rec = os.path.join(root_dir, 'train.rec')
@@ -62,9 +65,9 @@ def get_dataloader(
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
                 ])
-        if train_dataset == 'oulu-npu_frames_3d_hrn':
-            train_set = OULU_NPU_FRAMES_3D_HRN(root_dir, protocol_id, frames_path, img_size, part, \
-                                               local_rank=local_rank, transform=transform)
+        if 'oulu-npu' in train_dataset and '3d_hrn' in train_dataset:
+            train_set = OULU_NPU_FRAMES_3D_HRN(root_dir, protocol_id, frames_path, img_size, frames_per_video, \
+                                               part, role, local_rank=local_rank, transform=transform)
         else:
             raise Exception(f'Error: dataloader not implemented for dataset \'{train_dataset}\'.')
 

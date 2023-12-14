@@ -105,10 +105,13 @@ def main(args):
         'train',
         local_rank,
         cfg.batch_size,
+        cfg.frames_per_video if hasattr(cfg, 'frames_per_video') else 1,
         cfg.dali,
         cfg.dali_aug,
         cfg.seed,
-        cfg.num_workers
+        cfg.num_workers,
+        role='train',
+        percent=0.6
     )
     print(f'    train samples: {len(train_loader.dataset)}')
 
@@ -120,13 +123,17 @@ def main(args):
         cfg.dataset_path,   # Bernardo
         cfg.frames_path,    # Bernardo
         cfg.img_size,       # Bernardo
-        'val',
+        # 'val',
+        'train',
         local_rank,
         cfg.batch_size,
+        cfg.frames_per_video if hasattr(cfg, 'frames_per_video') else 1,
         cfg.dali,
         cfg.dali_aug,
         cfg.seed,
-        cfg.num_workers
+        cfg.num_workers,
+        role='val',
+        percent=0.2
     )
     print(f'    val samples: {len(val_loader.dataset)}')
 
@@ -234,6 +241,7 @@ def main(args):
             train_loader.sampler.set_epoch(epoch)
         # for _, (img, local_labels) in enumerate(train_loader):                          # original
         for batch_idx, (img, true_pointcloud, local_labels) in enumerate(train_loader):   # Bernardo
+            print(f'epoch: {epoch}/{cfg.max_epoch-1} - batch_idx: {batch_idx}/{len(train_loader)-1}', end='\r')
             backbone.train()            # Bernardo
             module_partial_fc.train()   # Bernardo
 
@@ -275,6 +283,7 @@ def main(args):
                 print('Saving train samples...')
                 save_sample(path_dir_samples, img, true_pointcloud, local_labels,
                             pred_pointcloud, pred_labels)
+        print('')
 
         with torch.no_grad():
             if wandb_logger:
@@ -329,6 +338,7 @@ def validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluato
         val_class_loss_am = AverageMeter()
         val_total_loss_am = AverageMeter()
         for val_batch_idx, (val_img, val_pointcloud, val_labels) in enumerate(val_loader):
+            print(f'epoch: {epoch}/{cfg.max_epoch-1} - val_batch_idx: {val_batch_idx}/{len(val_loader)-1}', end='\r')
             val_pred_pointcloud, val_pred_logits = backbone(val_img)
             val_loss_reconst = chamfer_loss(val_pointcloud, val_pred_pointcloud)
             val_loss_class, val_probabilities, val_pred_labels = module_partial_fc(val_pred_logits, val_labels)
@@ -345,6 +355,7 @@ def validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluato
                 print('Saving val samples...')
                 save_sample(path_dir_samples, val_img, val_pointcloud, val_labels,
                             val_pred_pointcloud, val_pred_labels)
+        print('')
 
         metrics = val_evaluator.evaluate()
 
