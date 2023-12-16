@@ -82,7 +82,7 @@ def make_samples_list(protocol_data=[], frames_per_video=1, frames_path_part='',
             pc_file_pattern = os.path.join(dir_sample, '*'+pc_file_ext)
             pc_file_path = glob.glob(pc_file_pattern)
             if len(pc_file_path) == 0:
-                raise Exception(f'Error, no file \'{pc_file_path}\' found in dir \'{frames_path_part}\'')
+                raise Exception(f'Error, no file \'{pc_file_pattern}\' found in dir \'{dir_sample}\'')
             pc_file_path = pc_file_path[0]
             # print('pc_file_pattern:', pc_file_pattern)
             # print('pc_file_path:', pc_file_path)
