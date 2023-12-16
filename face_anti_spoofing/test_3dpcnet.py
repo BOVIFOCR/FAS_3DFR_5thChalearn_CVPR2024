@@ -105,10 +105,13 @@ def main(args):
         'test',
         local_rank,
         cfg.batch_size,
+        cfg.frames_per_video if hasattr(cfg, 'frames_per_video') else 1,
         cfg.dali,
         cfg.dali_aug,
         cfg.seed,
-        cfg.num_workers
+        cfg.num_workers,
+        role='test',
+        percent=1.0
     )
     print(f'    test samples: {len(test_loader.dataset)}')
 
@@ -278,7 +281,7 @@ def test(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator, c
 
             if val_batch_idx == 0:
                 path_dir_samples = os.path.join('/'.join(args.weights.split('/')[:-1]), f'samples/batch={val_batch_idx}/test')
-                print('Saving test samples...')
+                print(f'Saving test samples at \'{path_dir_samples}\'...')
                 save_sample(path_dir_samples, val_img, val_pointcloud, val_labels,
                             val_pred_pointcloud, val_pred_labels)
 
