@@ -69,7 +69,7 @@ def make_samples_list(protocol_data=[], frames_per_video=1, frames_path_part='',
         rgb_file_pattern = os.path.join(frames_path_part, video_name+'*', '*'+rgb_file_ext)
         rgb_file_paths = glob.glob(rgb_file_pattern)
         if len(rgb_file_paths) == 0:
-            raise Exception(f'Error, no file \'{rgb_file_pattern}\' found in dir \'{frames_path_part}\'')
+            raise Exception(f'Error, no file \'{rgb_file_pattern}\' found in dir \'{dir_sample}\'')
         # rgb_file_path = rgb_file_path[0]
         for j, rgb_file_path in enumerate(rgb_file_paths):
             print(f'\'video: {i}/{len(protocol_data)-1}  -  sample: {j}/{len(rgb_file_paths)-1}  -  global_idx: {global_idx}/{num_frames-1}\'', end='\r')
