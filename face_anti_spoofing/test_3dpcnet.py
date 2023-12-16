@@ -102,7 +102,8 @@ def main(args):
         cfg.dataset_path,   # Bernardo
         cfg.frames_path,    # Bernardo
         cfg.img_size,       # Bernardo
-        'test',
+        # 'test',
+        'val',
         local_rank,
         cfg.batch_size,
         cfg.frames_per_video if hasattr(cfg, 'frames_per_video') else 1,
