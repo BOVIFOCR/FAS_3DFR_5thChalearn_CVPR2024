@@ -136,6 +136,29 @@ def main(args):
     )
     print(f'    val samples: {len(val_loader.dataset)}')
 
+    if args.monitor_test:
+        print(f'Loading test paths (dataset: \'{cfg.train_dataset}\')...')
+        test_loader = get_dataloader(
+            # cfg.rec,          # original
+            cfg.train_dataset,  # Bernardo
+            cfg.protocol_id,    # Bernardo
+            cfg.dataset_path,   # Bernardo
+            cfg.frames_path,    # Bernardo
+            cfg.img_size,       # Bernardo
+            'test',
+            local_rank,
+            cfg.batch_size,
+            cfg.frames_per_video if hasattr(cfg, 'frames_per_video') else 1,
+            cfg.dali,
+            cfg.dali_aug,
+            cfg.seed,
+            cfg.num_workers,
+            role='test',
+            percent=1.0,
+            ignore_pointcloud_files=True
+        )
+        print(f'    test samples: {len(test_loader.dataset)}')
+
     print(f'\nBuilding model \'{cfg.network}\'...')
     backbone = get_model(
         '3dpcnet', img_size=cfg.img_size, dropout=0.0, fp16=cfg.fp16, num_features=cfg.embedding_size).cuda()
@@ -226,6 +249,11 @@ def main(args):
                                      batch_size=cfg.batch_size,
                                      num_batches=len(val_loader))
 
+    if args.monitor_test:
+        test_evaluator = EvaluatorLogging(num_samples=len(test_loader.dataset),
+                                        batch_size=cfg.batch_size,
+                                        num_batches=len(test_loader))
+
     reconst_loss_am = AverageMeter()
     class_loss_am = AverageMeter()
     total_loss_am = AverageMeter()
@@ -277,9 +305,9 @@ def main(args):
 
             train_evaluator.update(pred_labels, local_labels)
 
-            if (epoch % 10 == 0 or epoch == cfg.max_epoch-1) and batch_idx == 0:
+            if (epoch % 2 == 0 or epoch == cfg.max_epoch-1) and batch_idx == 0:
                 path_dir_samples = os.path.join(cfg.output, f'samples/epoch={epoch}_batch={batch_idx}/train')
-                print('Saving train samples...')
+                print('Saving train samples:', path_dir_samples)
                 save_sample(path_dir_samples, img, true_pointcloud, local_labels,
                             pred_pointcloud, pred_labels)
         print('')
@@ -311,6 +339,10 @@ def main(args):
             }
             validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator,
                      global_step, epoch, summary_writer, cfg, early_stopping, checkpoint, wandb_logger, run_name)   # Bernardo
+            
+            if args.monitor_test:
+                test(chamfer_loss, module_partial_fc, backbone, test_loader, test_evaluator,
+                    global_step, epoch, summary_writer, cfg, wandb_logger)   # Bernardo
                 
         if cfg.dali:
             train_loader.reset()
@@ -351,7 +383,7 @@ def validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluato
 
             if (epoch % 10 == 0 or epoch == cfg.max_epoch-1) and val_batch_idx == 0:
                 path_dir_samples = os.path.join(cfg.output, f'samples/epoch={epoch}_batch={val_batch_idx}/val')
-                print('Saving val samples...')
+                print('Saving val samples:', path_dir_samples)
                 save_sample(path_dir_samples, val_img, val_pointcloud, val_labels,
                             val_pred_pointcloud, val_pred_labels)
         print('')
@@ -378,6 +410,59 @@ def validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluato
         val_class_loss_am.reset()
         val_total_loss_am.reset()
 
+
+# Bernardo
+def test(chamfer_loss, module_partial_fc, backbone, test_loader, test_evaluator,
+         global_step, epoch, writer, cfg, wandb_logger):
+    with torch.no_grad():
+        # module_partial_fc.eval()
+        # backbone.eval()
+        test_evaluator.reset()
+
+        # test_reconst_loss_am = AverageMeter()
+        test_class_loss_am = AverageMeter()
+        # test_total_loss_am = AverageMeter()
+        for test_batch_idx, (test_img, test_pointcloud, test_labels) in enumerate(test_loader):
+            print(f'epoch: {epoch}/{cfg.max_epoch-1} - test_batch_idx: {test_batch_idx}/{len(test_loader)-1}', end='\r')
+            test_pred_pointcloud, test_pred_logits = backbone(test_img)
+            test_loss_reconst = chamfer_loss(test_pointcloud, test_pred_pointcloud)
+            test_loss_class, test_probabilities, test_pred_labels = module_partial_fc(test_pred_logits, test_labels)
+            test_total_loss = test_loss_reconst + test_loss_class
+
+            # test_reconst_loss_am.update(test_loss_reconst.item(), 1)
+            test_class_loss_am.update(test_loss_class.item(), 1)
+            # test_total_loss_am.update(test_total_loss.item(), 1)
+
+            test_evaluator.update(test_pred_labels, test_labels)
+
+            if (epoch % 10 == 0 or epoch == cfg.max_epoch-1) and test_batch_idx == 0:
+                path_dir_samples = os.path.join(cfg.output, f'samples/epoch={epoch}_batch={test_batch_idx}/test')
+                print('Saving test samples:', path_dir_samples)
+                save_sample(path_dir_samples, test_img, test_pointcloud, test_labels,
+                            test_pred_pointcloud, test_pred_labels)
+        print('')
+
+        metrics = test_evaluator.evaluate()
+
+        print('Test:    test_ClassLoss: %.4f    test_acc: %.4f%%    test_apcer: %.4f%%    test_bpcer: %.4f%%    test_acer: %.4f%%' %
+              (test_class_loss_am.avg, metrics['acc'], metrics['apcer'], metrics['bpcer'], metrics['acer']))
+
+        # writer.add_scalar('loss/test_reconst_loss', test_reconst_loss_am.avg, epoch)
+        writer.add_scalar('loss/test_class_loss', test_class_loss_am.avg, epoch)
+        # writer.add_scalar('loss/test_total_loss', test_total_loss_am.avg, epoch)
+        writer.add_scalar('acc/test_acc', metrics['acc'], epoch)
+        writer.add_scalar('apcer/test_apcer', metrics['apcer'], epoch)
+        writer.add_scalar('bpcer/test_bpcer', metrics['bpcer'], epoch)
+        writer.add_scalar('acer/test_acer', metrics['acer'], epoch)
+
+        # smooth_loss = True
+        # test_total_loss_smooth = early_stopping(test_total_loss_am.avg, smooth_loss, cfg, checkpoint, epoch, wandb_logger, run_name)
+        # if smooth_loss:
+        #     writer.add_scalar('loss/test_total_loss_smooth', test_total_loss_smooth, epoch)
+
+        # test_reconst_loss_am.reset()
+        test_class_loss_am.reset()
+        # test_total_loss_am.reset()
 
 
 def save_sample(path_dir_samples, img, true_pointcloud, local_labels, pred_pointcloud, pred_labels):
@@ -417,4 +502,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Distributed Arcface Training in Pytorch")
     parser.add_argument("--config", type=str, default='configs/oulu-npu_frames_3d_hrn_r18.py', help="Ex: --config configs/oulu-npu_frames_3d_hrn_r18.py")
+    parser.add_argument("--monitor-test", action='store_true')
     main(parser.parse_args())
