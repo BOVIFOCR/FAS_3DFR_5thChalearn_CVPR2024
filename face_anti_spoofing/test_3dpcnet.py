@@ -66,8 +66,7 @@ def main(args):
         cfg.dataset_path,   # Bernardo
         cfg.frames_path,    # Bernardo
         cfg.img_size,       # Bernardo
-        # 'test',
-        'train',
+        'test',
         local_rank,
         cfg.batch_size,
         cfg.frames_per_video if hasattr(cfg, 'frames_per_video') else 1,
@@ -76,7 +75,8 @@ def main(args):
         cfg.seed,
         cfg.num_workers,
         role='test',
-        percent=0.8
+        percent=1.0,
+        ignore_pointcloud_files=True
     )
     print(f'    test samples: {len(test_loader.dataset)}')
 
@@ -110,10 +110,10 @@ def main(args):
     # del dict_checkpoint
 
     test_evaluator = EvaluatorLogging(num_samples=len(test_loader.dataset),
-                                       batch_size=cfg.batch_size,
-                                       num_batches=len(test_loader))
+                                      batch_size=cfg.batch_size,
+                                      num_batches=len(test_loader))
 
-    print(f'\nStarting testing...')
+    print(f'\nStarting test...')
     with torch.no_grad():
         test(chamfer_loss, module_partial_fc, backbone, test_loader, test_evaluator, cfg, args)   # Bernardo
 
@@ -126,19 +126,21 @@ def test(chamfer_loss, module_partial_fc, backbone, test_loader, test_evaluator,
         # backbone.eval()
         test_evaluator.reset()
 
-        test_reconst_loss_am = AverageMeter()
+        # test_reconst_loss_am = AverageMeter()
         test_class_loss_am = AverageMeter()
-        test_total_loss_am = AverageMeter()
+        # test_total_loss_am = AverageMeter()
+
+        print(f'\nDoing test...')
         for test_batch_idx, (test_img, test_pointcloud, test_labels) in enumerate(test_loader):
             print(f'batch: {test_batch_idx}/{len(test_loader)}', end='\r')
             test_pred_pointcloud, test_pred_logits = backbone(test_img)
-            test_loss_reconst = chamfer_loss(test_pointcloud, test_pred_pointcloud)
+            # test_loss_reconst = chamfer_loss(test_pointcloud, test_pred_pointcloud)
             test_loss_class, test_probabilities, test_pred_labels = module_partial_fc(test_pred_logits, test_labels)
-            test_total_loss = test_loss_reconst + test_loss_class
+            # test_total_loss = test_loss_reconst + test_loss_class
             
-            test_reconst_loss_am.update(test_loss_reconst.item(), 1)
+            # test_reconst_loss_am.update(test_loss_reconst.item(), 1)
             test_class_loss_am.update(test_loss_class.item(), 1)
-            test_total_loss_am.update(test_total_loss.item(), 1)
+            # test_total_loss_am.update(test_total_loss.item(), 1)
 
             test_evaluator.update(test_pred_labels, test_labels)
 
@@ -151,12 +153,14 @@ def test(chamfer_loss, module_partial_fc, backbone, test_loader, test_evaluator,
 
         metrics = test_evaluator.evaluate()
 
-        print('Test:    test_ReconstLoss: %.4f    test_ClassLoss: %.4f    test_TotalLoss: %.4f    test_acc: %.4f%%    test_apcer: %.4f%%    test_bpcer: %.4f%%    test_acer: %.4f%%' %
-              (test_reconst_loss_am.avg, test_class_loss_am.avg, test_total_loss_am.avg, metrics['acc'], metrics['apcer'], metrics['bpcer'], metrics['acer']))
+        # print('Test:    test_ReconstLoss: %.4f    test_ClassLoss: %.4f    test_TotalLoss: %.4f    test_acc: %.4f%%    test_apcer: %.4f%%    test_bpcer: %.4f%%    test_acer: %.4f%%' %
+        #       (test_reconst_loss_am.avg, test_class_loss_am.avg, test_total_loss_am.avg, metrics['acc'], metrics['apcer'], metrics['bpcer'], metrics['acer']))
+        print('Test:    test_ClassLoss: %.4f    test_acc: %.4f%%    test_apcer: %.4f%%    test_bpcer: %.4f%%    test_acer: %.4f%%' %
+              (test_class_loss_am.avg, metrics['acc'], metrics['apcer'], metrics['bpcer'], metrics['acer']))
 
-        test_reconst_loss_am.reset()
+        # test_reconst_loss_am.reset()
         test_class_loss_am.reset()
-        test_total_loss_am.reset()
+        # test_total_loss_am.reset()
 
 
 
@@ -173,8 +177,9 @@ def save_sample(path_dir_samples, img, true_pointcloud, local_labels, pred_point
         path_img = os.path.join(path_sample, f'img.png')
         cv2.imwrite(path_img, img_bgr)
 
-        path_true_pc = os.path.join(path_sample, f'true_pointcloud.obj')
-        write_obj(path_true_pc, true_pointcloud[i])
+        if len(true_pointcloud.size()) > 0:
+            path_true_pc = os.path.join(path_sample, f'true_pointcloud.obj')
+            write_obj(path_true_pc, true_pointcloud[i])
 
         path_pred_pc = os.path.join(path_sample, f'pred_pointcloud.obj')
         write_obj(path_pred_pc, pred_pointcloud[i])

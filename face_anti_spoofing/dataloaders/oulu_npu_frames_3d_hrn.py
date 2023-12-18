@@ -3,6 +3,7 @@ import glob
 import numpy as np
 import cv2
 from PIL import Image
+import torch
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 
@@ -10,7 +11,7 @@ from . import utils_dataloaders as ud
 
 
 class OULU_NPU_FRAMES_3D_HRN(Dataset):
-    def __init__(self, root_dir, protocol_id, frames_path, img_size, frames_per_video=1, part='train', role='train', percent=0.6, local_rank=0, transform=None):
+    def __init__(self, root_dir, protocol_id, frames_path, img_size, frames_per_video=1, part='train', role='train', percent=0.6, ignore_pointcloud_files=False, local_rank=0, transform=None):
         super(OULU_NPU_FRAMES_3D_HRN, self).__init__()
         # self.transform = transform
         # self.root_dir = root_dir
@@ -70,7 +71,7 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
         self.rgb_file_ext = '_input_face.jpg'
         # self.pc_file_ext = '_hrn_high_mesh.obj'           # text file
         self.pc_file_ext = '_hrn_high_mesh_10000points.npy' # binary file
-        self.samples_list = ud.make_samples_list(self.protocol_data, frames_per_video, self.frames_path_part, self.rgb_file_ext, self.pc_file_ext)
+        self.samples_list = ud.make_samples_list(self.protocol_data, frames_per_video, self.frames_path_part, self.rgb_file_ext, self.pc_file_ext, ignore_pointcloud_files)
         self.indices = np.random.choice(10000, 2500, replace=False)
         
         # assert len(self.protocol_data) == len(self.samples_list), 'Error, len(self.protocol_data) must be equals to len(self.samples_list)'
@@ -280,18 +281,20 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
             rgb_data = self.load_img(img_path)
             rgb_data = self.normalize_img(rgb_data)
 
-        if pc_path.endswith('.obj'):
-            pc_data = self.read_obj(pc_path)['vertices']
-        elif pc_path.endswith('.npy'):
-            pc_data = np.load(pc_path)
-            # pc_data = np.load(pc_path).astype(np.float32)
+        if not pc_path is None:
+            if pc_path.endswith('.obj'):
+                pc_data = self.read_obj(pc_path)['vertices']
+            elif pc_path.endswith('.npy'):
+                pc_data = np.load(pc_path)
+                # pc_data = np.load(pc_path).astype(np.float32)
+            pc_data = self.normalize_pc(pc_data)
+            pc_data = self.sample_points(pc_data, n=2500)
 
-        pc_data = self.normalize_pc(pc_data)
-        pc_data = self.sample_points(pc_data, n=2500)
+            if label == 0:
+                pc_data = self.flat_pc_axis_z(pc_data)
+        else:
+            pc_data = torch.tensor(0)
 
-        if label == 0:
-            pc_data = self.flat_pc_axis_z(pc_data)
-        
         # save_path = f'./pointcloud_index={index}_label={label}.obj'
         # self.write_obj(save_path, pc_data)
         

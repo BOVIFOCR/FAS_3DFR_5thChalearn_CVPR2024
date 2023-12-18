@@ -38,7 +38,7 @@ config.verbose = 100     # Bernardo
 config.dali = False
 
 # config.rec = "/train_tmp/ms1m-retinaface-t1"                                                # original
-config.train_dataset = 'oulu-npu_all-frames_3d_hrn'                                               # Bernardo
+config.train_dataset = 'oulu-npu_all-frames_3d_hrn'                                           # Bernardo
 config.protocol_id = 1                                                                        # Bernardo
 # config.protocol_id = 2
 # config.protocol_id = 3

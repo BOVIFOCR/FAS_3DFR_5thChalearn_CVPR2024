@@ -33,7 +33,8 @@ def get_dataloader(
     seed = 2048,
     num_workers = 2,
     role = 'train',
-    percent = 1.0
+    percent = 1.0,
+    ignore_pointcloud_files=False
     ) -> Iterable:
 
     rec = os.path.join(root_dir, 'train.rec')
@@ -67,7 +68,7 @@ def get_dataloader(
                 ])
         if 'oulu-npu' in train_dataset and '3d_hrn' in train_dataset:
             train_set = OULU_NPU_FRAMES_3D_HRN(root_dir, protocol_id, frames_path, img_size, frames_per_video, \
-                                               part, role, percent, local_rank=local_rank, transform=transform)
+                                               part, role, percent, ignore_pointcloud_files, local_rank=local_rank, transform=transform)
         else:
             raise Exception(f'Error: dataloader not implemented for dataset \'{train_dataset}\'.')
 

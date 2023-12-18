@@ -55,7 +55,7 @@ def count_all_frames(protocol_data, frames_path_part, rgb_file_ext):
     return num_frames
 
 
-def make_samples_list(protocol_data=[], frames_per_video=1, frames_path_part='', rgb_file_ext='', pc_file_ext=''):
+def make_samples_list(protocol_data=[], frames_per_video=1, frames_path_part='', rgb_file_ext='', pc_file_ext='', ignore_pointcloud_files=False):
     # samples_list = [None] * len(protocol_data)
     if frames_per_video > 0:
         num_frames = frames_per_video * len(protocol_data)
@@ -72,21 +72,24 @@ def make_samples_list(protocol_data=[], frames_per_video=1, frames_path_part='',
             raise Exception(f'Error, no file \'{rgb_file_pattern}\' found in dir \'{dir_sample}\'')
         # rgb_file_path = rgb_file_path[0]
         for j, rgb_file_path in enumerate(rgb_file_paths):
-            print(f'\'video: {i}/{len(protocol_data)-1}  -  sample: {j}/{len(rgb_file_paths)-1}  -  global_idx: {global_idx}/{num_frames-1}\'', end='\r')
+            print(f'\'video: {i}/{len(protocol_data)-1}  -  sample: {j}/{len(rgb_file_paths)-1}  -  global_idx: {global_idx}/{num_frames-1}\'  -  ignore_pointcloud_files: {ignore_pointcloud_files}', end='\r')
 
             dir_sample = os.path.dirname(rgb_file_path)
             # print('rgb_file_path:', rgb_file_path)
             # print('dir_sample:', dir_sample)
             # sys.exit(0)
 
-            pc_file_pattern = os.path.join(dir_sample, '*'+pc_file_ext)
-            pc_file_path = glob.glob(pc_file_pattern)
-            if len(pc_file_path) == 0:
-                raise Exception(f'Error, no file \'{pc_file_pattern}\' found in dir \'{dir_sample}\'')
-            pc_file_path = pc_file_path[0]
-            # print('pc_file_pattern:', pc_file_pattern)
-            # print('pc_file_path:', pc_file_path)
-            # sys.exit(0)
+            if not ignore_pointcloud_files:
+                pc_file_pattern = os.path.join(dir_sample, '*'+pc_file_ext)
+                pc_file_path = glob.glob(pc_file_pattern)
+                if len(pc_file_path) == 0:
+                    raise Exception(f'Error, no file \'{pc_file_pattern}\' found in dir \'{dir_sample}\'')
+                pc_file_path = pc_file_path[0]
+                # print('pc_file_pattern:', pc_file_pattern)
+                # print('pc_file_path:', pc_file_path)
+                # sys.exit(0)
+            else:
+                pc_file_path = None
 
             one_sample = (rgb_file_path, pc_file_path, label)
             # samples_list.append(one_sample)
