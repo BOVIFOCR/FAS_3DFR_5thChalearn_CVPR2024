@@ -35,7 +35,7 @@ class _3DPCNet(nn.Module):
         # self.decoder = self.get_decoder_mlp(self.face_embedd_size, self.num_output_points, self.num_axis)
         # self.decoder = self.get_decoder_ConvTranspose2d(input_shape=(1, self.face_embedd_size), output_shape=(self.num_axis, self.num_output_points))
         self.decoder = self.get_decoder_Conv1x1(input_shape=(1, self.face_embedd_size), output_shape=(1, self.num_axis, self.num_output_points))
-        self.classifier = self.get_classifier(self.num_output_points, self.num_axis, num_classes=2)
+        self.classifier = self.get_classifier(self.num_output_points, self.num_axis, embedding_size=128)
         self._initialize_weights()
 
 
@@ -94,12 +94,15 @@ class _3DPCNet(nn.Module):
         return nn.Sequential(*layers)
 
 
-    def get_classifier(self, num_points=2500, num_axis=3, num_classes=2):
+    def get_classifier(self, num_points=2500, num_axis=3, embedding_size=128):
         layers = []
 
         # layer 1
-        layers.append(nn.Linear(num_points*num_axis, num_classes, bias=False))
-        layers.append(nn.BatchNorm1d(num_classes, eps=1e-05))
+        layers.append(nn.Linear(num_points*num_axis, embedding_size, bias=False))
+        batch_norm1 = nn.BatchNorm1d(embedding_size, eps=1e-05)
+        nn.init.constant_(batch_norm1.weight, 1.0)
+        batch_norm1.weight.requires_grad = False
+        layers.append(batch_norm1)
 
         return nn.Sequential(*layers)
 

@@ -72,10 +72,11 @@ config.num_classes = 2         # (live or spoof) Bernardo
 # config.num_image = 5179510   # original
 config.num_image = 240585      # Bernardo
 
+config.max_epoch = 10
 # config.max_epoch = 20
 # config.max_epoch = 50
 # config.max_epoch = 100
-config.max_epoch = 300
+# config.max_epoch = 300
 
 config.warmup_epoch = 0
 # config.val_targets = ['lfw', 'cfp_fp', "agedb_30"]

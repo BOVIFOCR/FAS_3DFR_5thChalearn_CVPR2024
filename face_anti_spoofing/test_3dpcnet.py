@@ -99,7 +99,7 @@ def main(args):
     chamfer_loss = ChamferLoss()
 
     module_partial_fc = PartialFC_V2(
-        margin_loss,   2,                  cfg.num_classes,
+        margin_loss, 128, cfg.num_classes,
         cfg.sample_rate, False)
     module_partial_fc.cuda()
 

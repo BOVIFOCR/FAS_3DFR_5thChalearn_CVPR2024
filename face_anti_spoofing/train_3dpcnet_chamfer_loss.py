@@ -111,7 +111,7 @@ def main(args):
         cfg.seed,
         cfg.num_workers,
         role='train',
-        percent=0.6
+        percent=1.0
     )
     print(f'    train samples: {len(train_loader.dataset)}')
 
@@ -123,8 +123,7 @@ def main(args):
         cfg.dataset_path,   # Bernardo
         cfg.frames_path,    # Bernardo
         cfg.img_size,       # Bernardo
-        # 'val',
-        'train',
+        'val',
         local_rank,
         cfg.batch_size,
         cfg.frames_per_video if hasattr(cfg, 'frames_per_video') else 1,
@@ -133,7 +132,7 @@ def main(args):
         cfg.seed,
         cfg.num_workers,
         role='val',
-        percent=0.2
+        percent=1.0
     )
     print(f'    val samples: {len(val_loader.dataset)}')
 
@@ -164,7 +163,7 @@ def main(args):
     if cfg.optimizer == "sgd":
         module_partial_fc = PartialFC_V2(
             # margin_loss, cfg.embedding_size, cfg.num_classes,
-            margin_loss,   2,                  cfg.num_classes,
+            margin_loss,   128,                cfg.num_classes,
             cfg.sample_rate, False)
         module_partial_fc.train().cuda()
         # TODO the params of partial fc must be last in the params list
@@ -175,7 +174,7 @@ def main(args):
     elif cfg.optimizer == "adamw":
         module_partial_fc = PartialFC_V2(
             # margin_loss, cfg.embedding_size, cfg.num_classes,
-            margin_loss,   2,                  cfg.num_classes,
+            margin_loss,   128,                cfg.num_classes,
             cfg.sample_rate, False)
         module_partial_fc.train().cuda()
         opt = torch.optim.AdamW(
