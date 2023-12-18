@@ -58,42 +58,6 @@ def main(args):
 
     torch.cuda.set_device(local_rank)
 
-    # os.makedirs(cfg.output, exist_ok=True)
-    # init_logging(rank, cfg.output)
-
-    # summary_writer = (
-    #     SummaryWriter(log_dir=os.path.join(cfg.output, "tensorboard"))
-    #     if rank == 0
-    #     else None
-    # )
-    
-    # wandb_logger = None
-    # run_name = datetime.now().strftime("%y%m%d_%H%M") + f"_GPU{rank}"
-    # if cfg.using_wandb:
-    #     import wandb
-    #     # Sign in to wandb
-    #     try:
-    #         wandb.login(key=cfg.wandb_key)
-    #     except Exception as e:
-    #         print("WandB Key must be provided in config file (base.py).")
-    #         print(f"Config Error: {e}")
-    #     # Initialize wandb
-    #     # run_name = datetime.now().strftime("%y%m%d_%H%M") + f"_GPU{rank}"
-    #     run_name = run_name if cfg.suffix_run_name is None else run_name + f"_{cfg.suffix_run_name}"
-    #     try:
-    #         wandb_logger = wandb.init(
-    #             entity = cfg.wandb_entity, 
-    #             project = cfg.wandb_project, 
-    #             sync_tensorboard = True,
-    #             resume=cfg.wandb_resume,
-    #             name = run_name, 
-    #             notes = cfg.notes) if rank == 0 or cfg.wandb_log_all else None
-    #         if wandb_logger:
-    #             wandb_logger.config.update(cfg)
-    #     except Exception as e:
-    #         print("WandB Data (Entity and Project name) must be provided in config file (base.py).")
-    #         print(f"Config Error: {e}")
-
     print(f'Loading test paths (dataset: \'{cfg.train_dataset}\')...')
     test_loader = get_dataloader(
         # cfg.rec,          # original
@@ -116,24 +80,6 @@ def main(args):
     )
     print(f'    test samples: {len(test_loader.dataset)}')
 
-    # print(f'Loading val paths (dataset: \'{cfg.train_dataset}\')...')
-    # val_loader = get_dataloader(
-    #     # cfg.rec,          # original
-    #     cfg.train_dataset,  # Bernardo
-    #     cfg.protocol_id,    # Bernardo
-    #     cfg.dataset_path,   # Bernardo
-    #     cfg.frames_path,    # Bernardo
-    #     cfg.img_size,       # Bernardo
-    #     'val',
-    #     local_rank,
-    #     cfg.batch_size,
-    #     cfg.dali,
-    #     cfg.dali_aug,
-    #     cfg.seed,
-    #     cfg.num_workers
-    # )
-    # print(f'    val samples: {len(val_loader.dataset)}')
-
     print(f'\nBuilding model \'{cfg.network}\'...')
     backbone = get_model(
         '3dpcnet', img_size=cfg.img_size, dropout=0.0, fp16=cfg.fp16, num_features=cfg.embedding_size).cuda()
@@ -142,65 +88,6 @@ def main(args):
         module=backbone, broadcast_buffers=False, device_ids=[local_rank], bucket_cap_mb=16,
         find_unused_parameters=True)
     backbone.register_comm_hook(None, fp16_compress_hook)
-
-    # backbone.train()
-    # FIXME using gradient checkpoint if there are some unused parameters will cause error
-    # backbone._set_static_graph()
-
-    # print(f'\nSetting loss function...')
-    # margin_loss = CombinedMarginLoss(
-    #     64,
-    #     cfg.margin_list[0],
-    #     cfg.margin_list[1],
-    #     cfg.margin_list[2],
-    #     cfg.interclass_filtering_threshold
-    # )
-    # chamfer_loss = ChamferLoss()
-
-    # print(f'\nSetting optimizer...')
-    # if cfg.optimizer == "sgd":
-    #     module_partial_fc = PartialFC_V2(
-    #         # margin_loss, cfg.embedding_size, cfg.num_classes,
-    #         margin_loss,   2,                  cfg.num_classes,
-    #         cfg.sample_rate, False)
-    #     module_partial_fc.train().cuda()
-    #     # TODO the params of partial fc must be last in the params list
-    #     opt = torch.optim.SGD(
-    #         params=[{"params": backbone.parameters()}, {"params": module_partial_fc.parameters()}],
-    #         lr=cfg.lr, momentum=0.9, weight_decay=cfg.weight_decay)
-    #
-    # elif cfg.optimizer == "adamw":
-    #     module_partial_fc = PartialFC_V2(
-    #         # margin_loss, cfg.embedding_size, cfg.num_classes,
-    #         margin_loss,   2,                  cfg.num_classes,
-    #         cfg.sample_rate, False)
-    #     module_partial_fc.train().cuda()
-    #     opt = torch.optim.AdamW(
-    #         params=[{"params": backbone.parameters()}, {"params": module_partial_fc.parameters()}],
-    #         lr=cfg.lr, weight_decay=cfg.weight_decay)
-    # else:
-    #     raise
-
-    # cfg.total_batch_size = cfg.batch_size * world_size
-    # cfg.warmup_step = cfg.num_image // cfg.total_batch_size * cfg.warmup_epoch
-    # cfg.total_step = cfg.num_image // cfg.total_batch_size * cfg.max_epoch
-
-    # lr_scheduler = PolynomialLRWarmup(
-    #     optimizer=opt,
-    #     warmup_iters=cfg.warmup_step,
-    #     total_iters=cfg.total_step)
-
-    # start_epoch = 0
-    # global_step = 0
-    # if cfg.resume:
-    #     dict_checkpoint = torch.load(os.path.join(cfg.output, f"checkpoint_gpu_{rank}.pt"))
-    #     start_epoch = dict_checkpoint["epoch"]
-    #     global_step = dict_checkpoint["global_step"]
-    #     backbone.module.load_state_dict(dict_checkpoint["state_dict_backbone"])
-    #     module_partial_fc.load_state_dict(dict_checkpoint["state_dict_softmax_fc"])
-    #     opt.load_state_dict(dict_checkpoint["state_optimizer"])
-    #     lr_scheduler.load_state_dict(dict_checkpoint["state_lr_scheduler"])
-    #     del dict_checkpoint
 
     margin_loss = CombinedMarginLoss(
         64,
@@ -222,35 +109,9 @@ def main(args):
     module_partial_fc.load_state_dict(dict_checkpoint["state_dict_softmax_fc"])
     # del dict_checkpoint
 
-    # for key, value in cfg.items():
-    #     num_space = 25 - len(key)
-    #     logging.info(": " + key + " " * num_space + str(value))
-
-    # # Bernardo
-    # callback_logging = CallBackEpochLogging(
-    #     frequent=cfg.frequent,
-    #     total_step=cfg.total_step,
-    #     batch_size=len(test_loader),
-    #     num_batches=cfg.batch_size,
-    #     start_step = global_step,
-    #     writer=summary_writer
-    # )
-
     test_evaluator = EvaluatorLogging(num_samples=len(test_loader.dataset),
                                        batch_size=cfg.batch_size,
                                        num_batches=len(test_loader))
-    
-    # val_evaluator = EvaluatorLogging(num_samples=len(val_loader.dataset),
-    #                                  batch_size=cfg.batch_size,
-    #                                  num_batches=len(val_loader))
-
-    # reconst_loss_am = AverageMeter()
-    # class_loss_am = AverageMeter()
-    # total_loss_am = AverageMeter()
-    # amp = torch.cuda.amp.grad_scaler.GradScaler(growth_interval=100)
-
-    # patience = 30
-    # early_stopping = EarlyStopping(patience=patience, verbose=True, delta=0.01, max_epochs=cfg.max_epoch)
 
     print(f'\nStarting testing...')
     with torch.no_grad():
@@ -259,43 +120,43 @@ def main(args):
 
 
 # Bernardo
-def test(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator, cfg, args):
+def test(chamfer_loss, module_partial_fc, backbone, test_loader, test_evaluator, cfg, args):
     with torch.no_grad():
         # module_partial_fc.eval()
         # backbone.eval()
-        val_evaluator.reset()
+        test_evaluator.reset()
 
-        val_reconst_loss_am = AverageMeter()
-        val_class_loss_am = AverageMeter()
-        val_total_loss_am = AverageMeter()
-        for val_batch_idx, (val_img, val_pointcloud, val_labels) in enumerate(val_loader):
-            print(f'batch: {val_batch_idx}/{len(val_loader)}', end='\r')
-            val_pred_pointcloud, val_pred_logits = backbone(val_img)
-            val_loss_reconst = chamfer_loss(val_pointcloud, val_pred_pointcloud)
-            val_loss_class, val_probabilities, val_pred_labels = module_partial_fc(val_pred_logits, val_labels)
-            val_total_loss = val_loss_reconst + val_loss_class
+        test_reconst_loss_am = AverageMeter()
+        test_class_loss_am = AverageMeter()
+        test_total_loss_am = AverageMeter()
+        for test_batch_idx, (test_img, test_pointcloud, test_labels) in enumerate(test_loader):
+            print(f'batch: {test_batch_idx}/{len(test_loader)}', end='\r')
+            test_pred_pointcloud, test_pred_logits = backbone(test_img)
+            test_loss_reconst = chamfer_loss(test_pointcloud, test_pred_pointcloud)
+            test_loss_class, test_probabilities, test_pred_labels = module_partial_fc(test_pred_logits, test_labels)
+            test_total_loss = test_loss_reconst + test_loss_class
             
-            val_reconst_loss_am.update(val_loss_reconst.item(), 1)
-            val_class_loss_am.update(val_loss_class.item(), 1)
-            val_total_loss_am.update(val_total_loss.item(), 1)
+            test_reconst_loss_am.update(test_loss_reconst.item(), 1)
+            test_class_loss_am.update(test_loss_class.item(), 1)
+            test_total_loss_am.update(test_total_loss.item(), 1)
 
-            val_evaluator.update(val_pred_labels, val_labels)
+            test_evaluator.update(test_pred_labels, test_labels)
 
-            if args.save_samples and val_batch_idx == 0:
-                path_dir_samples = os.path.join('/'.join(args.weights.split('/')[:-1]), f'samples/batch={val_batch_idx}/test')
+            if args.save_samples and test_batch_idx == 0:
+                path_dir_samples = os.path.join('/'.join(args.weights.split('/')[:-1]), f'samples/batch={test_batch_idx}/test')
                 print(f'Saving test samples at \'{path_dir_samples}\'...')
-                save_sample(path_dir_samples, val_img, val_pointcloud, val_labels,
-                            val_pred_pointcloud, val_pred_labels)
+                save_sample(path_dir_samples, test_img, test_pointcloud, test_labels,
+                            test_pred_pointcloud, test_pred_labels)
         print('')
 
-        metrics = val_evaluator.evaluate()
+        metrics = test_evaluator.evaluate()
 
         print('Test:    test_ReconstLoss: %.4f    test_ClassLoss: %.4f    test_TotalLoss: %.4f    test_acc: %.4f%%    test_apcer: %.4f%%    test_bpcer: %.4f%%    test_acer: %.4f%%' %
-              (val_reconst_loss_am.avg, val_class_loss_am.avg, val_total_loss_am.avg, metrics['acc'], metrics['apcer'], metrics['bpcer'], metrics['acer']))
+              (test_reconst_loss_am.avg, test_class_loss_am.avg, test_total_loss_am.avg, metrics['acc'], metrics['apcer'], metrics['bpcer'], metrics['acer']))
 
-        val_reconst_loss_am.reset()
-        val_class_loss_am.reset()
-        val_total_loss_am.reset()
+        test_reconst_loss_am.reset()
+        test_class_loss_am.reset()
+        test_total_loss_am.reset()
 
 
 
