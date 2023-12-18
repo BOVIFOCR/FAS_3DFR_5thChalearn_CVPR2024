@@ -103,7 +103,7 @@ def main(args):
         cfg.frames_path,    # Bernardo
         cfg.img_size,       # Bernardo
         # 'test',
-        'val',
+        'train',
         local_rank,
         cfg.batch_size,
         cfg.frames_per_video if hasattr(cfg, 'frames_per_video') else 1,
@@ -112,7 +112,7 @@ def main(args):
         cfg.seed,
         cfg.num_workers,
         role='test',
-        percent=1.0
+        percent=0.8
     )
     print(f'    test samples: {len(test_loader.dataset)}')
 
@@ -269,6 +269,7 @@ def test(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator, c
         val_class_loss_am = AverageMeter()
         val_total_loss_am = AverageMeter()
         for val_batch_idx, (val_img, val_pointcloud, val_labels) in enumerate(val_loader):
+            print(f'batch: {val_batch_idx}/{len(val_loader)}', end='\r')
             val_pred_pointcloud, val_pred_logits = backbone(val_img)
             val_loss_reconst = chamfer_loss(val_pointcloud, val_pred_pointcloud)
             val_loss_class, val_probabilities, val_pred_labels = module_partial_fc(val_pred_logits, val_labels)
@@ -280,11 +281,12 @@ def test(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator, c
 
             val_evaluator.update(val_pred_labels, val_labels)
 
-            if val_batch_idx == 0:
+            if args.save_samples and val_batch_idx == 0:
                 path_dir_samples = os.path.join('/'.join(args.weights.split('/')[:-1]), f'samples/batch={val_batch_idx}/test')
                 print(f'Saving test samples at \'{path_dir_samples}\'...')
                 save_sample(path_dir_samples, val_img, val_pointcloud, val_labels,
                             val_pred_pointcloud, val_pred_labels)
+        print('')
 
         metrics = val_evaluator.evaluate()
 
@@ -335,4 +337,5 @@ if __name__ == "__main__":
         description="Distributed Arcface Training in Pytorch")
     parser.add_argument("--config", type=str, default='configs/oulu-npu_frames_3d_hrn_r18.py', help="Ex: --config configs/oulu-npu_frames_3d_hrn_r18.py")
     parser.add_argument("--weights", type=str, default='work_dirs/oulu-npu_frames_3d_hrn_r18_prot=1_imgsize=224_maxepoch=300_batch=32_lr=0.1_wd=0.0005_embedd=256_20231207_184909/best_model.pt', help="Ex: --config configs/oulu-npu_frames_3d_hrn_r18.py")
+    parser.add_argument("--save-samples", action='store_true')
     main(parser.parse_args())
