@@ -425,9 +425,9 @@ def test(chamfer_loss, module_partial_fc, backbone, test_loader, test_evaluator,
         for test_batch_idx, (test_img, test_pointcloud, test_labels) in enumerate(test_loader):
             print(f'epoch: {epoch}/{cfg.max_epoch-1} - test_batch_idx: {test_batch_idx}/{len(test_loader)-1}', end='\r')
             test_pred_pointcloud, test_pred_logits = backbone(test_img)
-            test_loss_reconst = chamfer_loss(test_pointcloud, test_pred_pointcloud)
+            # test_loss_reconst = chamfer_loss(test_pointcloud, test_pred_pointcloud)
             test_loss_class, test_probabilities, test_pred_labels = module_partial_fc(test_pred_logits, test_labels)
-            test_total_loss = test_loss_reconst + test_loss_class
+            # test_total_loss = test_loss_reconst + test_loss_class
 
             # test_reconst_loss_am.update(test_loss_reconst.item(), 1)
             test_class_loss_am.update(test_loss_class.item(), 1)
