@@ -478,8 +478,9 @@ def save_sample(path_dir_samples, img, true_pointcloud, local_labels, pred_point
         path_img = os.path.join(path_sample, f'img.png')
         cv2.imwrite(path_img, img_bgr)
 
-        path_true_pc = os.path.join(path_sample, f'true_pointcloud.obj')
-        write_obj(path_true_pc, true_pointcloud[i])
+        if len(true_pointcloud.size()) > 1:
+            path_true_pc = os.path.join(path_sample, f'true_pointcloud.obj')
+            write_obj(path_true_pc, true_pointcloud[i])
 
         path_pred_pc = os.path.join(path_sample, f'pred_pointcloud.obj')
         write_obj(path_pred_pc, pred_pointcloud[i])
