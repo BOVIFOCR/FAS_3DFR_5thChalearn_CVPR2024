@@ -100,6 +100,7 @@ class OULU_NPU_FRAMES_3D_HRN(Dataset):
         pc = (pc - pc.min()) / (pc.max() - pc.min())
         centroid = np.mean(pc, axis=0)
         pc = pc - centroid
+        pc[:,2] = pc[:,2] + centroid[2]
         m = np.max(np.sqrt(np.sum(pc**2, axis=1)))
         pc = pc / m
         return pc
