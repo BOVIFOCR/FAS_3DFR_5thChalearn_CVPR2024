@@ -1,3 +1,5 @@
+import os
+nodename = os.uname().nodename
 from easydict import EasyDict as edict
 
 # make training faster
@@ -8,13 +10,12 @@ config = edict()
 config.margin_list = (1.0, 0.5, 0.0)
 
 config.network = "r50"   # original
-# config.network = "r18"     # Bernardo
 
 config.resume = False
 config.output = None
 
-config.embedding_size = 512  # original
-# config.embedding_size = 256    # Bernardo
+# config.embedding_size = 512  # original
+config.embedding_size = 256    # Bernardo
 
 config.sample_rate = 1.0
 # config.fp16 = True       # original
@@ -38,8 +39,21 @@ config.dali = False
 # config.rec = "/train_tmp/ms1m-retinaface-t1"                                                # original
 config.train_dataset = 'oulu-npu_frames_3d_hrn'                                               # Bernardo
 config.protocol_id = 1                                                                        # Bernardo
-config.dataset_path = '/experiments/BOVIFOCR_project/datasets/bjgbiesseck/liveness/oulu-npu'  # Bernardo
-config.frames_path = '/datasets1/bjgbiesseck/liveness/HRN_3D_reconstruction/oulu-npu_frames'  # Bernardo
+# config.protocol_id = 2
+# config.protocol_id = 3
+# config.protocol_id = 4
+
+if nodename == 'duo':
+    config.dataset_path = '/experiments/BOVIFOCR_project/datasets/bjgbiesseck/liveness/oulu-npu'  # Bernardo
+    config.frames_path = '/datasets1/bjgbiesseck/liveness/HRN_3D_reconstruction/oulu-npu_frames'  # Bernardo
+
+elif nodename == 'diolkos':
+    config.dataset_path = '/nobackup/unico/datasets/liveness/oulu-npu'                                   # Bernardo
+    config.frames_path = '/nobackup/unico/datasets/liveness/3D_face_reconstruction/HRN/oulu-npu_frames'  # Bernardo
+
+elif nodename == 'peixoto':
+    config.dataset_path = '/nobackup1/bjgbiesseck/datasets/liveness/oulu-npu'                          # Bernardo
+    config.frames_path = '/nobackup1/bjgbiesseck/datasets/3D_face_reconstruction/HRN/oulu-npu_frames'  # Bernardo
 
 # config.img_size = 112        # Bernardo
 config.img_size = 224          # Bernardo

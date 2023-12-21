@@ -29,7 +29,9 @@ config.weight_decay = 5e-4
 config.batch_size = 32     # Bernardo
 # config.batch_size = 16   # Bernardo
 
-config.lr = 0.1
+# config.lr = 0.1
+# config.lr = 0.01
+config.lr = 0.001
 
 # config.verbose = 2000  # original for 5.1M images
 config.verbose = 100     # Bernardo
@@ -72,8 +74,8 @@ config.num_classes = 2         # (live or spoof) Bernardo
 # config.num_image = 5179510   # original
 config.num_image = 240585      # Bernardo
 
-config.max_epoch = 10
-# config.max_epoch = 20
+# config.max_epoch = 10
+config.max_epoch = 20
 # config.max_epoch = 50
 # config.max_epoch = 100
 # config.max_epoch = 300
