@@ -8,6 +8,7 @@ from easydict import EasyDict as edict
 
 config = edict()
 config.margin_list = (1.0, 0.5, 0.0)
+# config.margin_list = (1.0, 0.75, 0.0)
 
 # config.network = "r50"   # original
 config.network = "r18"     # Bernardo
@@ -66,9 +67,9 @@ config.num_classes = 2         # (live or spoof) Bernardo
 config.num_image = 1800        # Bernardo
 
 # config.max_epoch = 20
-# config.max_epoch = 50
+config.max_epoch = 50
 # config.max_epoch = 100
-config.max_epoch = 300
+# config.max_epoch = 300
 
 config.warmup_epoch = 0
 # config.val_targets = ['lfw', 'cfp_fp', "agedb_30"]

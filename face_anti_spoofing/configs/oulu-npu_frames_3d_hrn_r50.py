@@ -28,7 +28,8 @@ config.weight_decay = 5e-4
 config.batch_size = 32     # Bernardo
 # config.batch_size = 16   # Bernardo
 
-config.lr = 0.1
+# config.lr = 0.1
+config.lr = 0.05
 
 # config.verbose = 2000  # original for 5.1M images
 config.verbose = 100     # Bernardo
@@ -37,7 +38,8 @@ config.verbose = 100     # Bernardo
 config.dali = False
 
 # config.rec = "/train_tmp/ms1m-retinaface-t1"                                                # original
-config.train_dataset = 'oulu-npu_frames_3d_hrn'                                               # Bernardo
+# config.train_dataset = 'oulu-npu_frames_3d_hrn'                                             # Bernardo
+config.train_dataset = 'oulu-npu_frames'                                                      # Bernardo
 config.protocol_id = 1                                                                        # Bernardo
 # config.protocol_id = 2
 # config.protocol_id = 3
@@ -53,7 +55,8 @@ elif nodename == 'diolkos':
 
 elif nodename == 'peixoto':
     config.dataset_path = '/nobackup1/bjgbiesseck/datasets/liveness/oulu-npu'                          # Bernardo
-    config.frames_path = '/nobackup1/bjgbiesseck/datasets/3D_face_reconstruction/HRN/oulu-npu_frames'  # Bernardo
+    # config.frames_path = '/nobackup1/bjgbiesseck/datasets/3D_face_reconstruction/HRN/oulu-npu_frames'  # Bernardo
+    config.frames_path = '/nobackup1/bjgbiesseck/datasets/liveness/oulu-npu_frames_cropped_align'  # Bernardo
 
 # config.img_size = 112        # Bernardo
 config.img_size = 224          # Bernardo
@@ -66,8 +69,8 @@ config.num_image = 1800        # Bernardo
 
 # config.max_epoch = 20
 # config.max_epoch = 50
-# config.max_epoch = 100
-config.max_epoch = 300
+config.max_epoch = 100
+# config.max_epoch = 300
 
 config.warmup_epoch = 0
 # config.val_targets = ['lfw', 'cfp_fp', "agedb_30"]

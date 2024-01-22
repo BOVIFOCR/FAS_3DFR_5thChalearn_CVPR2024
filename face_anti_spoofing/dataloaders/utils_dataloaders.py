@@ -55,7 +55,7 @@ def count_all_frames(protocol_data, frames_path_part, rgb_file_ext):
     return num_frames
 
 
-def make_samples_list(protocol_data=[], frames_per_video=1, frames_path_part='', rgb_file_ext='', pc_file_ext='', ignore_pointcloud_files=False):
+def make_samples_list(protocol_data=[], frames_per_video=1, frames_path_part='', rgb_file_ext='', pc_file_ext='', ignore_pointcloud_files=False, level=1):
     # samples_list = [None] * len(protocol_data)
     if frames_per_video > 0:
         num_frames = frames_per_video * len(protocol_data)
@@ -66,10 +66,13 @@ def make_samples_list(protocol_data=[], frames_per_video=1, frames_path_part='',
     global_idx = 0
     for i, (label, video_name) in enumerate(protocol_data):
         # print('label:', label, '    video_name:', video_name)
-        rgb_file_pattern = os.path.join(frames_path_part, video_name+'*', '*'+rgb_file_ext)
+        if level == 0:
+            rgb_file_pattern = os.path.join(frames_path_part, video_name+'*'+rgb_file_ext)
+        elif level == 1:
+            rgb_file_pattern = os.path.join(frames_path_part, video_name+'*', '*'+rgb_file_ext)
         rgb_file_paths = glob.glob(rgb_file_pattern)
         if len(rgb_file_paths) == 0:
-            raise Exception(f'Error, no file \'{rgb_file_pattern}\' found in dir \'{dir_sample}\'')
+            raise Exception(f'Error, no file \'{rgb_file_pattern}\' found in dir \'{frames_path_part}\'')
         # rgb_file_path = rgb_file_path[0]
         for j, rgb_file_path in enumerate(rgb_file_paths):
             print(f'\'video: {i}/{len(protocol_data)-1}  -  sample: {j}/{len(rgb_file_paths)-1}  -  global_idx: {global_idx}/{num_frames-1}\'  -  ignore_pointcloud_files: {ignore_pointcloud_files}', end='\r')
