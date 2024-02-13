@@ -55,7 +55,7 @@ def count_all_frames(protocol_data, frames_path_part, rgb_file_ext):
     return num_frames
 
 
-def make_samples_list(protocol_data=[], frames_per_video=1, frames_path_part='', rgb_file_ext='', pc_file_ext='', ignore_pointcloud_files=False, level=1):
+def make_samples_list(protocol_data=[], frames_per_video=1, frames_path_part='', rgb_file_ext='', pc_file_ext='', ignore_pointcloud_files=False, level=1, attack_type_as_label=False):
     # samples_list = [None] * len(protocol_data)
     if frames_per_video > 0:
         num_frames = frames_per_video * len(protocol_data)
@@ -66,6 +66,10 @@ def make_samples_list(protocol_data=[], frames_per_video=1, frames_path_part='',
     global_idx = 0
     for i, (label, video_name) in enumerate(protocol_data):
         # print('label:', label, '    video_name:', video_name)
+        if attack_type_as_label:
+            phone, session, user, file_id = video_name.split('_')
+            label = int(file_id) - 1
+
         if level == 0:
             rgb_file_pattern = os.path.join(frames_path_part, video_name+'*'+rgb_file_ext)
         elif level == 1:

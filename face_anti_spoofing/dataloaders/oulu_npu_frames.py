@@ -30,6 +30,12 @@ class OULU_NPU_FRAMES(Dataset):
         self.img_size = img_size
         self.frames_per_video = frames_per_video
         self.protocols_path = os.path.join(root_dir, 'Protocols', 'Protocol_'+str(protocol_id))
+        self.preprocess = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
 
         if part == 'train':
             self.root_dir_part = os.path.join(root_dir, 'train')
@@ -69,16 +75,18 @@ class OULU_NPU_FRAMES(Dataset):
             self.protocol_data = self.protocol_data[idx_start:idx_end]
 
         self.rgb_file_ext = '.png'
-        self.samples_list = ud.make_samples_list(self.protocol_data, frames_per_video, self.frames_path_part, self.rgb_file_ext, pc_file_ext=None, ignore_pointcloud_files=True, level=0)
+        self.samples_list = ud.make_samples_list(self.protocol_data, frames_per_video, self.frames_path_part, self.rgb_file_ext, pc_file_ext=None, ignore_pointcloud_files=True, level=0, attack_type_as_label=True)
         # self.indices = np.random.choice(10000, 2500, replace=False)
-        
+
         # assert len(self.protocol_data) == len(self.samples_list), 'Error, len(self.protocol_data) must be equals to len(self.samples_list)'
 
 
     def normalize_img(self, img):
         img = np.transpose(img, (2, 0, 1))  # from (224,224,3) to (3,224,224)
-        img = ((img/255.)-0.5)/0.5
-        # print('img:', img)
+        # img = ((img/255.)-0.5)/0.5   # between [-1, 1]
+        img = img/255.                 # between [0, 1]
+        img = (img - np.array([[[0.485]],[[0.456]],[[0.406]]],dtype=np.float32)) / np.array([[[0.229]],[[0.224]],[[0.225]]],dtype=np.float32)
+        # print('img:', img.dtype)
         # sys.exit(0)
         return img
 
