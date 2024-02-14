@@ -26,4 +26,5 @@ def get_config(config_file):
                               +  f'_embedd={cfg.embedding_size}'
                               +  f'_{date_time}'
                               )
+        cfg.output = cfg.output.replace(' ', '')
     return cfg

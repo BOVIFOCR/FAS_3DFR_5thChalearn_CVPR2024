@@ -37,7 +37,7 @@ def get_dataloader(
     role = 'train',
     percent = 1.0,
     ignore_pointcloud_files=False,
-    shuffled_indices_samples=None
+    protocol_data=None
     ) -> Iterable:
 
     rec = os.path.join(root_dir, 'train.rec')
@@ -78,7 +78,7 @@ def get_dataloader(
         elif train_dataset == 'UniAttackData_3d_hrn':
             rgb_path, pc_path = frames_path
             train_set = UniAttackData_FRAMES_3D_HRN(root_dir, protocol_id, rgb_path, pc_path, img_size, frames_per_video, \
-                                                    part, role, percent, ignore_pointcloud_files, shuffled_indices_samples, local_rank=local_rank, transform=transform)
+                                                    part, role, percent, ignore_pointcloud_files, protocol_data, local_rank=local_rank, transform=transform)
         else:
             raise Exception(f'Error: dataloader not implemented for dataset \'{train_dataset}\'.')
 

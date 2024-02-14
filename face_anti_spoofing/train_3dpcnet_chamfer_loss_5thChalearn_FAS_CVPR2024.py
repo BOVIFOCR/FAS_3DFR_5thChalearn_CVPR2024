@@ -112,7 +112,7 @@ def main(args):
         cfg.num_workers,
         role='train',
         percent=0.8,
-        shuffled_indices_samples=None
+        protocol_data=None
     )
     print(f'    train samples: {len(train_loader.dataset)}')
 
@@ -134,7 +134,7 @@ def main(args):
         cfg.num_workers,
         role='val',
         percent=0.2,
-        shuffled_indices_samples=train_loader.dataset.shuffled_indices_samples
+        protocol_data=train_loader.dataset.protocol_data
     )
     print(f'    val samples: {len(val_loader.dataset)}')
 

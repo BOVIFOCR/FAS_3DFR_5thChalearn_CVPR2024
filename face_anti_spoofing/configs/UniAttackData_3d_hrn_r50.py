@@ -47,10 +47,13 @@ config.verbose = 100     # Bernardo
 
 config.dali = False
 
-# config.rec = "/train_tmp/ms1m-retinaface-t1"                                              # original
-# config.train_dataset = 'oulu-npu_frames_3d_hrn'                                           # Bernardo
-config.train_dataset = 'UniAttackData_3d_hrn'                                               # Bernardo
-config.protocol_id = 'p1'                                                                   # Bernardo
+# config.rec = "/train_tmp/ms1m-retinaface-t1"               # original
+# config.train_dataset = 'oulu-npu_frames_3d_hrn'            # Bernardo
+config.train_dataset = 'UniAttackData_3d_hrn'                # Bernardo
+# config.protocol_id = ['p1']                                # Bernardo
+config.protocol_id = ['p2.1']                                # Bernardo
+# config.protocol_id = ['p2.2']                              # Bernardo
+# config.protocol_id = ['p1', 'p2.1', 'p2.2']                # Bernardo
 
 config.frames_per_video = -1  # all frames
 
@@ -58,6 +61,9 @@ if nodename == 'duo':
     config.dataset_path = '/datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData/phase1'                      # Bernardo
     config.rgb_path = '/datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData_bbox_crop/phase1'                # Bernardo
     config.pc_path = '/datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData_bbox_crop_3D-HRN-sampled/phase1'  # Bernardo
+
+elif nodename == 'daugman':
+    pass
 
 elif nodename == 'diolkos':
     pass

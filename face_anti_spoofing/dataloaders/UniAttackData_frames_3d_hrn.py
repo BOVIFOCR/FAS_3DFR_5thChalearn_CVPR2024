@@ -12,7 +12,7 @@ from . import utils_dataloaders as ud
 
 
 class UniAttackData_FRAMES_3D_HRN(Dataset):
-    def __init__(self, root_dir, protocol_id, rgb_path, pc_path, img_size, frames_per_video=1, part='train', role='train', percent=0.6, ignore_pointcloud_files=False, shuffled_indices_samples=None, local_rank=0, transform=None):
+    def __init__(self, root_dir, protocol_id, rgb_path, pc_path, img_size, frames_per_video=1, part='train', role='train', percent=0.6, ignore_pointcloud_files=False, protocol_data=None, local_rank=0, transform=None):
         super(UniAttackData_FRAMES_3D_HRN, self).__init__()
         # self.transform = transform
         # self.root_dir = root_dir
@@ -28,38 +28,49 @@ class UniAttackData_FRAMES_3D_HRN(Dataset):
         # else:
         #     self.imgidx = np.array(list(self.imgrec.keys))
 
+        self.rgb_path = rgb_path
+        self.pc_path = pc_path
+        self.rgb_file_ext = '.png'
+        self.pc_file_ext = '_hrn_high_mesh_10000points.npy'  # binary file
+
         self.img_size = img_size
         self.frames_per_video = frames_per_video
-        self.protocols_path = os.path.join(root_dir, protocol_id)
-        self.shuffled_indices_samples = shuffled_indices_samples
+        self.protocols_path = [os.path.join(root_dir, prot_id) for prot_id in protocol_id]
+
+        # self.shuffled_indices_samples = shuffled_indices_samples
 
         if part == 'train':
-            self.root_dir_part = os.path.join(root_dir, 'train')
-            self.protocol_file_path = os.path.join(self.protocols_path, 'train_label.txt')
-            self.rgb_path = os.path.join(rgb_path, protocol_id, 'train')
-            self.pc_path = os.path.join(pc_path, protocol_id, 'train')
-        elif part == 'val' or part == 'validation' or part == 'dev' or part == 'development':
-            self.root_dir_part = os.path.join(root_dir, 'dev')
-            self.protocol_file_path = os.path.join(self.protocols_path, 'dev.txt')
-            self.rgb_path = os.path.join(rgb_path, protocol_id, 'dev')
-            self.pc_path = os.path.join(pc_path, protocol_id, 'dev')
-        elif part == 'test':
-            self.root_dir_part = os.path.join(root_dir, 'test')
-            self.protocol_file_path = os.path.join(self.protocols_path, 'test.txt')
-            self.rgb_path = os.path.join(rgb_path, protocol_id, 'test')
-            self.pc_path = os.path.join(pc_path, protocol_id, 'test')
+            self.protocol_file_path = [os.path.join(prot_path, 'train_label.txt') for prot_path in self.protocols_path]
+            # self.rgb_path = [os.path.join(rgb_path, prot_id, 'train') for prot_id in protocol_id]
+            # self.pc_path = [os.path.join(pc_path, prot_id, 'train') for prot_id in protocol_id]
+        # elif part == 'val' or part == 'validation' or part == 'dev' or part == 'development':
+        #     # self.root_dir_part = os.path.join(root_dir, 'dev')
+        #     self.protocol_file_path = os.path.join(self.protocols_path, 'dev.txt')
+        #     self.rgb_path = os.path.join(rgb_path, protocol_id, 'dev')
+        #     self.pc_path = os.path.join(pc_path, protocol_id, 'dev')
+        # elif part == 'test':
+        #     # self.root_dir_part = os.path.join(root_dir, 'test')
+        #     self.protocol_file_path = os.path.join(self.protocols_path, 'test.txt')
+        #     self.rgb_path = os.path.join(rgb_path, protocol_id, 'test')
+        #     self.pc_path = os.path.join(pc_path, protocol_id, 'test')
         else:
             raise Exception(f'Error, dataset partition not recognized: \'{part}\'')
 
-        assert os.path.isfile(self.protocol_file_path), f'Error, protocol file not found \'{self.protocol_file_path}\''
+        for i in range(len(self.protocol_file_path)):
+            assert os.path.isfile(self.protocol_file_path[i]), f'Error, protocol file not found \'{self.protocol_file_path[i]}\''
         assert os.path.isdir(self.rgb_path), f'Error, rgb path not found \'{self.rgb_path}\''
         assert os.path.isdir(self.pc_path), f'Error, point clouds path not found \'{self.pc_path}\''
-        
-        self.protocol_data = ud.load_file_protocol_UniAttackData(self.protocol_file_path)
-        if self.shuffled_indices_samples is None:
-            self.shuffled_indices_samples = list(range(len(self.protocol_data)))
-            random.shuffle(self.shuffled_indices_samples)
-        self.protocol_data = [self.protocol_data[idx] for idx in self.shuffled_indices_samples]
+
+        self.protocol_data = protocol_data
+        if self.protocol_data is None:
+            self.protocol_data = [ud.load_file_protocol_UniAttackData(prot_path) for prot_path in self.protocol_file_path]
+            self.protocol_data = [sample for prot_data in self.protocol_data for sample in prot_data]  # merge all samples into one list
+            random.shuffle(self.protocol_data)
+
+            self.protocol_data = ud.filter_valid_samples_UniAttackData(self.protocol_data, self.rgb_path, self.pc_path, self.rgb_file_ext, self.pc_file_ext)
+        # print('self.protocol_data:', self.protocol_data)
+        # print('len(self.protocol_data):', len(self.protocol_data))
+        # sys.exit(0)
 
         if percent < 1:
             if role == 'train':
@@ -75,8 +86,6 @@ class UniAttackData_FRAMES_3D_HRN(Dataset):
             self.protocol_data = self.protocol_data[idx_start:idx_end]
             print('    new len(self.protocol_data):', len(self.protocol_data))
 
-        self.rgb_file_ext = '.png'
-        self.pc_file_ext = '_hrn_high_mesh_10000points.npy' # binary file
         self.samples_list, self.num_real_samples, self.num_spoof_samples = ud.make_samples_list_UniAttackData(self.protocol_data, frames_per_video, self.rgb_path, self.pc_path, self.rgb_file_ext, self.pc_file_ext, ignore_pointcloud_files)
         self.indices = np.random.choice(10000, 2500, replace=False)
 
