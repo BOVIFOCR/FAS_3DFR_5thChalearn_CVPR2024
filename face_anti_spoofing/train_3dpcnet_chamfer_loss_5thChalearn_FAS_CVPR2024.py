@@ -111,7 +111,8 @@ def main(args):
         cfg.seed,
         cfg.num_workers,
         role='train',
-        percent=0.8
+        percent=0.8,
+        shuffled_indices_samples=None
     )
     print(f'    train samples: {len(train_loader.dataset)}')
 
@@ -132,7 +133,8 @@ def main(args):
         cfg.seed,
         cfg.num_workers,
         role='val',
-        percent=0.2
+        percent=0.2,
+        shuffled_indices_samples=train_loader.dataset.shuffled_indices_samples
     )
     print(f'    val samples: {len(val_loader.dataset)}')
 

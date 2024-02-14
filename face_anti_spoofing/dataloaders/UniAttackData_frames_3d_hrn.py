@@ -6,12 +6,13 @@ from PIL import Image
 import torch
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
+import random
 
 from . import utils_dataloaders as ud
 
 
 class UniAttackData_FRAMES_3D_HRN(Dataset):
-    def __init__(self, root_dir, protocol_id, rgb_path, pc_path, img_size, frames_per_video=1, part='train', role='train', percent=0.6, ignore_pointcloud_files=False, local_rank=0, transform=None):
+    def __init__(self, root_dir, protocol_id, rgb_path, pc_path, img_size, frames_per_video=1, part='train', role='train', percent=0.6, ignore_pointcloud_files=False, shuffled_indices_samples=None, local_rank=0, transform=None):
         super(UniAttackData_FRAMES_3D_HRN, self).__init__()
         # self.transform = transform
         # self.root_dir = root_dir
@@ -30,6 +31,7 @@ class UniAttackData_FRAMES_3D_HRN(Dataset):
         self.img_size = img_size
         self.frames_per_video = frames_per_video
         self.protocols_path = os.path.join(root_dir, protocol_id)
+        self.shuffled_indices_samples = shuffled_indices_samples
 
         if part == 'train':
             self.root_dir_part = os.path.join(root_dir, 'train')
@@ -54,7 +56,10 @@ class UniAttackData_FRAMES_3D_HRN(Dataset):
         assert os.path.isdir(self.pc_path), f'Error, point clouds path not found \'{self.pc_path}\''
         
         self.protocol_data = ud.load_file_protocol_UniAttackData(self.protocol_file_path)
-        print('len(self.protocol_data):', len(self.protocol_data))
+        if self.shuffled_indices_samples is None:
+            self.shuffled_indices_samples = list(range(len(self.protocol_data)))
+            random.shuffle(self.shuffled_indices_samples)
+        self.protocol_data = [self.protocol_data[idx] for idx in self.shuffled_indices_samples]
 
         if percent < 1:
             if role == 'train':
@@ -72,9 +77,10 @@ class UniAttackData_FRAMES_3D_HRN(Dataset):
 
         self.rgb_file_ext = '.png'
         self.pc_file_ext = '_hrn_high_mesh_10000points.npy' # binary file
-        self.samples_list = ud.make_samples_list_UniAttackData(self.protocol_data, frames_per_video, self.rgb_path, self.pc_path, self.rgb_file_ext, self.pc_file_ext, ignore_pointcloud_files)
+        self.samples_list, self.num_real_samples, self.num_spoof_samples = ud.make_samples_list_UniAttackData(self.protocol_data, frames_per_video, self.rgb_path, self.pc_path, self.rgb_file_ext, self.pc_file_ext, ignore_pointcloud_files)
         self.indices = np.random.choice(10000, 2500, replace=False)
-        
+
+        print(f'    num_real_samples: {self.num_real_samples}    num_spoof_samples: {self.num_spoof_samples}')
         # assert len(self.protocol_data) == len(self.samples_list), 'Error, len(self.protocol_data) must be equals to len(self.samples_list)'
 
 

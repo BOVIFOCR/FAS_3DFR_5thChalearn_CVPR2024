@@ -153,6 +153,8 @@ def make_samples_list_UniAttackData(protocol_data=[], frames_per_video=1, rgb_pa
     samples_list = [None] * len(protocol_data_valid_samples)
 
     global_idx = 0
+    num_real_samples = 0
+    num_spoof_samples = 0
     for i, (sample, label) in enumerate(protocol_data_valid_samples):
         print(f'Making samples list - protocol_data: {i+1}/{len(protocol_data_valid_samples)}', end='\r')
         sample_name = sample.split('/')[-1].split('.')[0]
@@ -175,7 +177,12 @@ def make_samples_list_UniAttackData(protocol_data=[], frames_per_video=1, rgb_pa
         one_sample = (rgb_file_path, pc_file_path, label)
         samples_list[global_idx] = one_sample
 
+        if label == 0 or label == '0':
+            num_real_samples += 1
+        else:
+            num_spoof_samples += 1
+
         global_idx += 1
     print('')
 
-    return samples_list
+    return samples_list, num_real_samples, num_spoof_samples
