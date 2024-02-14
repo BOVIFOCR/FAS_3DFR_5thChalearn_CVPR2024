@@ -292,7 +292,7 @@ class UniAttackData_FRAMES_3D_HRN(Dataset):
             pc_data = self.normalize_pc(pc_data)
             pc_data = self.sample_points(pc_data, n=2500)
 
-            if label == 0:
+            if label == 1:   # in dataset UniAttackData 0=real, 1=spoof
                 pc_data = self.flat_pc_axis_z(pc_data)
         else:
             pc_data = torch.tensor(0)

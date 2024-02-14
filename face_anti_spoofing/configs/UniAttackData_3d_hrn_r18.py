@@ -9,7 +9,7 @@ from easydict import EasyDict as edict
 config = edict()
 config.margin_list = (1.0, 0.5, 0.0)
 
-config.network = "r50"   # original
+config.network = "r18"   # original
 
 config.resume = False
 config.output = None

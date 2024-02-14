@@ -3,7 +3,7 @@ from .mobilefacenet import get_mbf
 from ._3dpcnet import _3DPCNet_Reconst_ClassifMLP, _3DPCNet_Reconst_ClassifMEANZ
 
 
-def get_model(name, **kwargs):
+def get_model(name, encoder_name, **kwargs):
     # resnet
     if name == "r18":
         return iresnet18(False, **kwargs)
@@ -91,7 +91,8 @@ def get_model(name, **kwargs):
 
     elif name == "3dpcnet_reconst_classifMLP":
         num_features = kwargs.get("num_features", 512)
-        return _3DPCNet_Reconst_ClassifMLP('r18', num_features, **kwargs)
+        return _3DPCNet_Reconst_ClassifMLP(encoder_name, face_embedd_size=num_features, **kwargs)
+        # return _3DPCNet_Reconst_ClassifMLP('r18', num_features, **kwargs)
 
     elif name == "3dpcnet_reconst_classifMEANZ":
         num_features = kwargs.get("num_features", 512)
