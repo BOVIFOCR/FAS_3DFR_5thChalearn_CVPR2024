@@ -52,7 +52,8 @@ except KeyError:
 def main(args):
 
     # get config
-    cfg = get_config(args.config)
+    # cfg = get_config(args.config)
+    cfg = get_config(args)
     # global control random seed
     setup_seed(seed=cfg.seed, cuda_deterministic=False)
 
@@ -507,4 +508,6 @@ if __name__ == "__main__":
         description="Distributed Arcface Training in Pytorch")
     parser.add_argument("--config", type=str, default='configs/oulu-npu_frames_3d_hrn_r18.py', help="Ex: --config configs/oulu-npu_frames_3d_hrn_r18.py")
     parser.add_argument("--monitor-test", action='store_true')
+    parser.add_argument("--exp-suffix", type=str, default='', help="Some information to be concatenated to the experiment folder name (Ex: EXPERIMENT_ABOUT_BLAH)")
+    
     main(parser.parse_args())

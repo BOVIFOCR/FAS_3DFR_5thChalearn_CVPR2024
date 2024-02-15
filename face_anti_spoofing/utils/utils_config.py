@@ -3,7 +3,8 @@ import os.path as osp
 from datetime import datetime
 
 
-def get_config(config_file):
+def get_config(args):
+    config_file = args.config
     assert config_file.startswith('configs/'), 'config file setting must start with configs/'
     temp_config_name = osp.basename(config_file)
     temp_module_name = osp.splitext(temp_config_name)[0]
@@ -25,6 +26,7 @@ def get_config(config_file):
                               +  f'_wd={cfg.weight_decay}'
                               +  f'_embedd={cfg.embedding_size}'
                               +  f'_{date_time}'
+                              + (f'_{args.exp_suffix}' if args.exp_suffix!='' else '')
                               )
         cfg.output = cfg.output.replace(' ', '')
     return cfg
