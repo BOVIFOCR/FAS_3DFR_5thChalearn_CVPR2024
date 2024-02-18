@@ -28,9 +28,9 @@ config.weight_decay = 5e-6
 
 # config.batch_size = 128  # original
 # config.batch_size = 64   # Bernardo
-# config.batch_size = 32     # Bernardo
-# config.batch_size = 16   # Bernardo
-config.batch_size = 8   # Bernardo
+# config.batch_size = 32   # Bernardo
+config.batch_size = 16     # Bernardo
+# config.batch_size = 8    # Bernardo
 
 # config.lr = 0.1
 # config.lr = 0.05
@@ -52,8 +52,8 @@ config.dali = False
 config.train_dataset = 'UniAttackData_3d_hrn'                # Bernardo
 # config.protocol_id = ['p1']                                # Bernardo
 # config.protocol_id = ['p2.1']                              # Bernardo
-config.protocol_id = ['p2.2']                                # Bernardo
-# config.protocol_id = ['p1', 'p2.1', 'p2.2']                # Bernardo
+# config.protocol_id = ['p2.2']                              # Bernardo
+config.protocol_id = ['p1', 'p2.1', 'p2.2']                  # Bernardo
 
 config.frames_per_video = -1  # all frames
 

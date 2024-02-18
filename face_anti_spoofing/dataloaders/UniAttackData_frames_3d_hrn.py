@@ -12,7 +12,7 @@ from . import utils_dataloaders as ud
 
 
 class UniAttackData_FRAMES_3D_HRN(Dataset):
-    def __init__(self, root_dir, protocol_id, rgb_path, pc_path, img_size, frames_per_video=1, part='train', role='train', percent=0.6, ignore_pointcloud_files=False, protocol_data=None, local_rank=0, transform=None):
+    def __init__(self, root_dir, protocol_id, rgb_path, pc_path, img_size, frames_per_video=1, part='train', role='train', percent=0.6, ignore_pointcloud_files=False, protocol_data=None, filter_valid_samples=True, local_rank=0, transform=None):
         super(UniAttackData_FRAMES_3D_HRN, self).__init__()
         # self.transform = transform
         # self.root_dir = root_dir
@@ -35,26 +35,31 @@ class UniAttackData_FRAMES_3D_HRN(Dataset):
 
         self.img_size = img_size
         self.frames_per_video = frames_per_video
-        self.protocols_path = [os.path.join(root_dir, prot_id) for prot_id in protocol_id]
 
-        # self.shuffled_indices_samples = shuffled_indices_samples
+        if type(protocol_id) is list:
+            self.protocols_path = [os.path.join(root_dir, prot_id) for prot_id in protocol_id]
 
-        if part == 'train':
-            self.protocol_file_path = [os.path.join(prot_path, 'train_label.txt') for prot_path in self.protocols_path]
-            # self.rgb_path = [os.path.join(rgb_path, prot_id, 'train') for prot_id in protocol_id]
-            # self.pc_path = [os.path.join(pc_path, prot_id, 'train') for prot_id in protocol_id]
-        # elif part == 'val' or part == 'validation' or part == 'dev' or part == 'development':
-        #     # self.root_dir_part = os.path.join(root_dir, 'dev')
-        #     self.protocol_file_path = os.path.join(self.protocols_path, 'dev.txt')
-        #     self.rgb_path = os.path.join(rgb_path, protocol_id, 'dev')
-        #     self.pc_path = os.path.join(pc_path, protocol_id, 'dev')
-        # elif part == 'test':
-        #     # self.root_dir_part = os.path.join(root_dir, 'test')
-        #     self.protocol_file_path = os.path.join(self.protocols_path, 'test.txt')
-        #     self.rgb_path = os.path.join(rgb_path, protocol_id, 'test')
-        #     self.pc_path = os.path.join(pc_path, protocol_id, 'test')
-        else:
-            raise Exception(f'Error, dataset partition not recognized: \'{part}\'')
+            if part == 'train':
+                self.protocol_file_path = [os.path.join(prot_path, 'train_label.txt') for prot_path in self.protocols_path]
+                # self.rgb_path = [os.path.join(rgb_path, prot_id, 'train') for prot_id in protocol_id]
+                # self.pc_path = [os.path.join(pc_path, prot_id, 'train') for prot_id in protocol_id]
+            elif part == 'val' or part == 'validation' or part == 'dev' or part == 'development':
+                self.protocol_file_path = [os.path.join(prot_path, 'dev.txt') for prot_path in self.protocols_path]
+            #     # self.root_dir_part = os.path.join(root_dir, 'dev')
+            #     self.protocol_file_path = os.path.join(self.protocols_path, 'dev.txt')
+            #     self.rgb_path = os.path.join(rgb_path, protocol_id, 'dev')
+            #     self.pc_path = os.path.join(pc_path, protocol_id, 'dev')
+            # elif part == 'test':
+            #     # self.root_dir_part = os.path.join(root_dir, 'test')
+            #     self.protocol_file_path = os.path.join(self.protocols_path, 'test.txt')
+            #     self.rgb_path = os.path.join(rgb_path, protocol_id, 'test')
+            #     self.pc_path = os.path.join(pc_path, protocol_id, 'test')
+            else:
+                raise Exception(f'Error, dataset partition not recognized: \'{part}\'')
+
+        elif os.path.isfile(protocol_id):
+            self.protocol_file_path = [protocol_id]
+        
 
         for i in range(len(self.protocol_file_path)):
             assert os.path.isfile(self.protocol_file_path[i]), f'Error, protocol file not found \'{self.protocol_file_path[i]}\''
@@ -65,9 +70,9 @@ class UniAttackData_FRAMES_3D_HRN(Dataset):
         if self.protocol_data is None:
             self.protocol_data = [ud.load_file_protocol_UniAttackData(prot_path) for prot_path in self.protocol_file_path]
             self.protocol_data = [sample for prot_data in self.protocol_data for sample in prot_data]  # merge all samples into one list
-            random.shuffle(self.protocol_data)
 
-            self.protocol_data = ud.filter_valid_samples_UniAttackData(self.protocol_data, self.rgb_path, self.pc_path, self.rgb_file_ext, self.pc_file_ext)
+            if filter_valid_samples:
+                self.protocol_data = ud.filter_valid_samples_UniAttackData(self.protocol_data, self.rgb_path, self.pc_path, self.rgb_file_ext, self.pc_file_ext)
         # print('self.protocol_data:', self.protocol_data)
         # print('len(self.protocol_data):', len(self.protocol_data))
         # sys.exit(0)
@@ -82,6 +87,7 @@ class UniAttackData_FRAMES_3D_HRN(Dataset):
             # elif role == 'test':
             #     idx_start = int(len(self.protocol_data) * 0.8)
             #     idx_end = len(self.protocol_data)
+            random.shuffle(self.protocol_data)
             print(f'{role} percent: {percent} of {len(self.protocol_data)}    idx_start: {idx_start}    idx_end: {idx_end}')
             self.protocol_data = self.protocol_data[idx_start:idx_end]
             print('    new len(self.protocol_data):', len(self.protocol_data))
@@ -292,7 +298,11 @@ class UniAttackData_FRAMES_3D_HRN(Dataset):
         # return sample, label
 
         # Bernardo
-        img_path, pc_path, label = self.samples_list[index]
+        if len(self.samples_list[index]) == 3:
+            img_path, pc_path, label = self.samples_list[index]
+        elif len(self.samples_list[index]) == 2:
+            img_path, label = self.samples_list[index]
+            pc_path = None
 
         if img_path.endswith('.jpg') or img_path.endswith('.jpeg') or img_path.endswith('.png'):
             rgb_data = self.load_img(img_path)

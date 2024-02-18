@@ -114,7 +114,8 @@ def load_file_protocol_UniAttackData(file_path):
         line = f.readline()
         while line:     # [image label]    p1/train/000001.jpg 1
             sample = line.strip().split(' ')
-            sample[1] = int(sample[1])         # convert train label to int
+            if len(sample) == 2:    # if contains path and label
+                sample[1] = int(sample[1])    # convert train label to int
             protocol_data.append(sample)   
             line = f.readline()
         # print('protocol_data:', protocol_data)
@@ -154,31 +155,50 @@ def make_samples_list_UniAttackData(protocol_data_valid_samples=[], frames_per_v
     global_idx = 0
     num_real_samples = 0
     num_spoof_samples = 0
-    for i, (sample, label) in enumerate(protocol_data_valid_samples):
+    # for i, (sample, label) in enumerate(protocol_data_valid_samples):
+    for i, sample in enumerate(protocol_data_valid_samples):
         print(f'Making samples list - protocol_data: {i+1}/{len(protocol_data_valid_samples)}', end='\r')
-        sub_path, sample_name = os.path.dirname(sample), os.path.basename(sample).split('.')[0]
+        if len(sample) == 2:   # if contains path and label
+            sample, label = sample
+            sub_path, sample_name = os.path.dirname(sample), os.path.basename(sample).split('.')[0]
 
-        rgb_file_pattern = os.path.join(rgb_path, sub_path, sample_name+'*'+rgb_file_ext)
-        rgb_file_path = glob.glob(rgb_file_pattern)
-        # print('rgb_file_path:', rgb_file_path)
-        assert len(rgb_file_path) > 0, f'Error, no rgb files found with pattern \'{rgb_file_pattern}\''
-        assert len(rgb_file_path) <= 1, f'Error, multiple rgb files found \'{rgb_file_path}\''
-        rgb_file_path = rgb_file_path[0]
+            rgb_file_pattern = os.path.join(rgb_path, sub_path, sample_name+'*'+rgb_file_ext)
+            rgb_file_path = glob.glob(rgb_file_pattern)
+            # print('rgb_file_path:', rgb_file_path)
+            assert len(rgb_file_path) > 0, f'Error, no rgb files found with pattern \'{rgb_file_pattern}\''
+            assert len(rgb_file_path) <= 1, f'Error, multiple rgb files found \'{rgb_file_path}\''
+            rgb_file_path = rgb_file_path[0]
 
-        pc_file_pattern = os.path.join(pc_path, sub_path, sample_name, sample_name+'*'+pc_file_ext)
-        pc_file_path = glob.glob(pc_file_pattern)
-        # print('pc_file_path:', pc_file_path)
-        assert len(pc_file_path) > 0, f'Error, no point cloud files found with pattern \'{pc_file_pattern}\''
-        assert len(pc_file_path) <= 1, f'Error, multiple point cloud files found \'{pc_file_path}\''
-        pc_file_path = pc_file_path[0]
-        # sys.exit(0)
+            pc_file_pattern = os.path.join(pc_path, sub_path, sample_name, sample_name+'*'+pc_file_ext)
+            pc_file_path = glob.glob(pc_file_pattern)
+            # print('pc_file_path:', pc_file_path)
+            assert len(pc_file_path) > 0, f'Error, no point cloud files found with pattern \'{pc_file_pattern}\''
+            assert len(pc_file_path) <= 1, f'Error, multiple point cloud files found \'{pc_file_path}\''
+            pc_file_path = pc_file_path[0]
+            # sys.exit(0)
 
-        one_sample = (rgb_file_path, pc_file_path, label)
+            one_sample = (rgb_file_path, pc_file_path, label)
+
+        else:
+            # print('\nsample:', sample)
+            sample, label = sample[0], -1   # no label
+            sub_path, sample_name = os.path.dirname(sample), os.path.basename(sample).split('.')[0]
+
+            rgb_file_pattern = os.path.join(rgb_path, sub_path, sample_name+'*'+rgb_file_ext)
+            rgb_file_path = glob.glob(rgb_file_pattern)
+            # print('rgb_file_path:', rgb_file_path)
+            assert len(rgb_file_path) > 0, f'Error, no rgb files found with pattern \'{rgb_file_pattern}\''
+            assert len(rgb_file_path) <= 1, f'Error, multiple rgb files found \'{rgb_file_path}\''
+            rgb_file_path = rgb_file_path[0]
+
+            one_sample = (rgb_file_path, label)
+            
+        
         samples_list[global_idx] = one_sample
 
         if label == 0 or label == '0':
             num_real_samples += 1
-        else:
+        elif label == 1 or label == '1':
             num_spoof_samples += 1
 
         global_idx += 1

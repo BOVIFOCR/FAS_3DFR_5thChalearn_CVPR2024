@@ -37,7 +37,10 @@ def get_dataloader(
     role = 'train',
     percent = 1.0,
     ignore_pointcloud_files=False,
-    protocol_data=None
+    protocol_data=None,
+    filter_valid_samples=True,
+    shuffle_samples=True,
+    drop_last_batch=False
     ) -> Iterable:
 
     rec = os.path.join(root_dir, 'train.rec')
@@ -78,7 +81,8 @@ def get_dataloader(
         elif train_dataset == 'UniAttackData_3d_hrn':
             rgb_path, pc_path = frames_path
             train_set = UniAttackData_FRAMES_3D_HRN(root_dir, protocol_id, rgb_path, pc_path, img_size, frames_per_video, \
-                                                    part, role, percent, ignore_pointcloud_files, protocol_data, local_rank=local_rank, transform=transform)
+                                                    part, role, percent, ignore_pointcloud_files, protocol_data, filter_valid_samples, \
+                                                    local_rank=local_rank, transform=transform)
         else:
             raise Exception(f'Error: dataloader not implemented for dataset \'{train_dataset}\'.')
 
@@ -89,8 +93,10 @@ def get_dataloader(
             num_threads=2, local_rank=local_rank, dali_aug=dali_aug)
 
     rank, world_size = get_dist_info()
+    # train_sampler = DistributedSampler(
+    #     train_set, num_replicas=world_size, rank=rank, shuffle=True, seed=seed)
     train_sampler = DistributedSampler(
-        train_set, num_replicas=world_size, rank=rank, shuffle=True, seed=seed)
+        train_set, num_replicas=world_size, rank=rank, shuffle=shuffle_samples, seed=seed)
 
     if seed is None:
         init_fn = None
@@ -104,7 +110,7 @@ def get_dataloader(
         sampler=train_sampler,
         num_workers=num_workers,
         pin_memory=True,
-        drop_last=False,
+        drop_last=drop_last_batch,
         worker_init_fn=init_fn,
     )
 

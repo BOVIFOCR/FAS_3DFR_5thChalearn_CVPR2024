@@ -26,7 +26,7 @@ def get_config(args):
                               +  f'_wd={cfg.weight_decay}'
                               +  f'_embedd={cfg.embedding_size}'
                               +  f'_{date_time}'
-                              + (f'_{args.exp_suffix}' if args.exp_suffix!='' else '')
+                              + (f'_{args.exp_suffix}' if hasattr(args, 'exp_suffix') and args.exp_suffix!='' else '')
                               )
-        cfg.output = cfg.output.replace(' ', '')
+        cfg.output = cfg.output.replace(' ', '').replace('\'', '')
     return cfg

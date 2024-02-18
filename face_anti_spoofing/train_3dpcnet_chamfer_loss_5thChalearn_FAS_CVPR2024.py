@@ -112,8 +112,10 @@ def main(args):
         cfg.seed,
         cfg.num_workers,
         role='train',
-        percent=0.8,
-        protocol_data=None
+        # percent=0.8,
+        percent=1.0,
+        protocol_data=None,
+        drop_last_batch=True,
     )
     print(f'    train samples: {len(train_loader.dataset)}')
 
@@ -134,8 +136,10 @@ def main(args):
         cfg.seed,
         cfg.num_workers,
         role='val',
-        percent=0.2,
-        protocol_data=train_loader.dataset.protocol_data
+        # percent=0.2,
+        percent=0.0,
+        protocol_data=train_loader.dataset.protocol_data,
+        drop_last_batch=True,
     )
     print(f'    val samples: {len(val_loader.dataset)}')
 
@@ -148,7 +152,7 @@ def main(args):
             cfg.dataset_path,   # Bernardo
             [cfg.rgb_path, cfg.pc_path],  # Bernardo
             cfg.img_size,       # Bernardo
-            'val',
+            'dev',
             local_rank,
             cfg.batch_size,
             cfg.frames_per_video if hasattr(cfg, 'frames_per_video') else 1,
@@ -341,8 +345,9 @@ def main(args):
                 "state_optimizer": opt.state_dict(),
                 "state_lr_scheduler": lr_scheduler.state_dict()
             }
-            validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator,
-                     global_step, epoch, summary_writer, cfg, early_stopping, checkpoint, wandb_logger, run_name)   # Bernardo
+            if len(val_loader.dataset) > 0:
+                validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator,
+                        global_step, epoch, summary_writer, cfg, early_stopping, checkpoint, wandb_logger, run_name)   # Bernardo
             
             if args.monitor_test:
                 test(chamfer_loss, module_partial_fc, backbone, test_loader, test_evaluator,
