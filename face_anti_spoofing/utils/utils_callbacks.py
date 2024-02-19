@@ -234,10 +234,11 @@ class EvaluatorLogging(object):
         pred_labels = self.all_pred_labels[:self.curr_idx]
         true_labels = self.all_true_labels[:self.curr_idx]
 
-        tp = float(torch.sum(torch.logical_and(pred_labels, true_labels)))
-        fp = float(torch.sum(torch.logical_and(pred_labels, torch.logical_not(true_labels))))
-        tn = float(torch.sum(torch.logical_and(torch.logical_not(pred_labels), torch.logical_not(true_labels))))
-        fn = float(torch.sum(torch.logical_and(torch.logical_not(pred_labels), true_labels)))
+        # tp = float(torch.sum(torch.logical_and(pred_labels, true_labels)))
+        # fp = float(torch.sum(torch.logical_and(pred_labels, torch.logical_not(true_labels))))
+        # tn = float(torch.sum(torch.logical_and(torch.logical_not(pred_labels), torch.logical_not(true_labels))))
+        # fn = float(torch.sum(torch.logical_and(torch.logical_not(pred_labels), true_labels)))
+        tp, fp, tn, fn = self.get_tp_fp_tn_fn(pred_labels, true_labels)
 
         tpr = 0 if (tp + fn == 0) else (tp / (tp + fn)) * 100.0
         fpr = 0 if (fp + tn == 0) else (fp / (fp + tn)) * 100.0
@@ -285,12 +286,15 @@ class EvaluatorLogging(object):
     def get_labels_from_probabilities(self, pred_probs, thresh=0.5):
         idx_probs_le_thresh = torch.le(pred_probs, thresh)
         pred_labels = torch.zeros((pred_probs.size(0)))
-        pred_labels[idx_probs_le_thresh] = 0
-        pred_labels[torch.logical_not(idx_probs_le_thresh)] = 1
+        pred_labels[idx_probs_le_thresh] = 0                      # real face
+        pred_labels[torch.logical_not(idx_probs_le_thresh)] = 1   # spoof
         return pred_labels
 
 
-    def get_tp_fp_tn_fn(self, pred_labels, true_labels):
+    def get_tp_fp_tn_fn(self, pred_labels, true_labels, real_label=0):
+        if real_label == 0:
+            pred_labels = torch.logical_not(pred_labels)
+            true_labels = torch.logical_not(true_labels)
         tp = float(torch.sum(torch.logical_and(pred_labels, true_labels)))
         fp = float(torch.sum(torch.logical_and(pred_labels, torch.logical_not(true_labels))))
         tn = float(torch.sum(torch.logical_and(torch.logical_not(pred_labels), torch.logical_not(true_labels))))

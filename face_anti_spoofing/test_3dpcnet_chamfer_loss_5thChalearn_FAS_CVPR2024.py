@@ -188,10 +188,15 @@ def main(args):
             # save_samples(path_save_test_samples, batch_img_paths, local_labels.cpu().numpy(), pred_labels.cpu().numpy(), pred_pointcloud.cpu().numpy())
         print('')
 
-        callback_logging(global_step, reconst_loss_am, class_loss_am, total_loss_am, train_evaluator,
-                         epoch, cfg.fp16, 0.0, amp)
+        # callback_logging(global_step, reconst_loss_am, class_loss_am, total_loss_am, train_evaluator,
+        #                  epoch, cfg.fp16, 0.0, amp)
 
-        output_path_dir = os.path.join(os.path.dirname(args.weights), args.output_dir_name)
+        metrics = train_evaluator.evaluate()
+
+        print('Test:    test_acc: %.4f%%    test_auc: %.4f%%    val_apcer: %.4f%%    val_bpcer: %.4f%%    val_acer: %.4f%%' %
+              (metrics['acc'], metrics['auc_roc'], metrics['apcer'], metrics['bpcer'], metrics['acer']))
+
+        output_path_dir = os.path.join(os.path.dirname(args.weights), args.output_dir_name, args.part)
         os.makedirs(output_path_dir, exist_ok=True)
         output_file_name = '_'.join(args.protocol.split('/')[-3:])
         output_path_scores_file = os.path.join(output_path_dir, output_file_name)

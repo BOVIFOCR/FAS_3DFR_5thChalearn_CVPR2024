@@ -10,8 +10,9 @@ config = edict()
 config.margin_list = (1.0, 0.5, 0.0)
 
 # config.scale = 64  # original
-# config.scale = 4     # Bernardo
-config.scale = 2     # Bernardo
+config.scale = 16  # Bernardo
+# config.scale = 8     # Bernardo
+# config.scale = 4   # Bernardo
 
 config.network = "r50"   # original
 
