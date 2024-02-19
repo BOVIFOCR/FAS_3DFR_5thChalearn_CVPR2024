@@ -137,7 +137,7 @@ def main(args):
         cfg.num_workers,
         role='val',
         # percent=0.2,
-        percent=0.0,
+        percent=1.0,
         protocol_data=train_loader.dataset.protocol_data,
         drop_last_batch=True,
     )
@@ -182,7 +182,7 @@ def main(args):
     print(f'\nSetting loss function...')
     margin_loss = CombinedMarginLoss(
         # 64,
-        4,
+        cfg.scale,
         cfg.margin_list[0],
         cfg.margin_list[1],
         cfg.margin_list[2],
@@ -311,7 +311,7 @@ def main(args):
             class_loss_am.update(class_loss.item(), 1)
             total_loss_am.update(total_loss.item(), 1)
 
-            train_evaluator.update(pred_labels, local_labels)
+            train_evaluator.update(pred_labels, local_labels, probabilities[:,1])
 
             if (epoch % 2 == 0 or epoch == cfg.max_epoch-1) and batch_idx == 0:
                 path_dir_samples = os.path.join(cfg.output, f'samples/epoch={epoch}_batch={batch_idx}/train')
@@ -345,10 +345,10 @@ def main(args):
                 "state_optimizer": opt.state_dict(),
                 "state_lr_scheduler": lr_scheduler.state_dict()
             }
-            if len(val_loader.dataset) > 0:
-                validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator,
-                        global_step, epoch, summary_writer, cfg, early_stopping, checkpoint, wandb_logger, run_name)   # Bernardo
-            
+
+            validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluator,
+                     global_step, epoch, summary_writer, cfg, early_stopping, checkpoint, wandb_logger, run_name)   # Bernardo
+
             if args.monitor_test:
                 test(chamfer_loss, module_partial_fc, backbone, test_loader, test_evaluator,
                     global_step, epoch, summary_writer, cfg, wandb_logger)   # Bernardo

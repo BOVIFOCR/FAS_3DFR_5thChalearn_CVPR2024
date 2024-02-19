@@ -21,6 +21,8 @@ def get_config(args):
                               + (f'_fpv={cfg.frames_per_video}' if hasattr(cfg, 'frames_per_video') else '_fpv=1')
                               +  f'_imgsize={cfg.img_size}'
                               +  f'_maxepoch={cfg.max_epoch}'
+                              +  f'_margin={cfg.margin_list}'
+                              +  f'_scale={cfg.scale}'
                               +  f'_batch={cfg.batch_size}'
                               +  f'_lr={cfg.lr}'
                               +  f'_wd={cfg.weight_decay}'

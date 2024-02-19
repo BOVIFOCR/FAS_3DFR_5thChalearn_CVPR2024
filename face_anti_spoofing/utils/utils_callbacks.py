@@ -177,19 +177,20 @@ class CallBackEpochLogging(object):
             self.writer.add_scalar('loss/train_class_loss', class_loss.avg, epoch)
             self.writer.add_scalar('loss/train_total_loss', total_loss.avg, epoch)
             self.writer.add_scalar('acc/train_acc', metrics['acc'], epoch)
+            self.writer.add_scalar('acc/train_AUC', metrics['auc_roc'], epoch)
             self.writer.add_scalar('apcer/train_apcer', metrics['apcer'], epoch)
             self.writer.add_scalar('bpcer/train_bpcer', metrics['bpcer'], epoch)
             self.writer.add_scalar('acer/train_acer', metrics['acer'], epoch)
         if fp16:
-            msg = " Epoch: %d   ReconstLoss %.4f   ClassLoss %.4f   TotalLoss %.4f    acc: %.4f%%    apcer: %.4f%%    bpcer: %.4f%%    acer: %.4f%%   LR %.6f   Global Step: %d   " \
+            msg = " Epoch: %d   ReconstLoss %.4f   ClassLoss %.4f   TotalLoss %.4f    acc: %.4f%%    AUC: %.4f%%    apcer: %.4f%%    bpcer: %.4f%%    acer: %.4f%%   LR %.6f   Global Step: %d   " \
                     "Fp16 Grad Scale: %2.f   Speed %.2f samples/sec   Required: %1.f hours" % (
-                        epoch, reconst_loss.avg, class_loss.avg, total_loss.avg, metrics['acc'], metrics['apcer'], metrics['bpcer'], metrics['acer'], learning_rate, global_step,
+                        epoch, reconst_loss.avg, class_loss.avg, total_loss.avg, metrics['acc'], metrics['auc_roc'], metrics['apcer'], metrics['bpcer'], metrics['acer'], learning_rate, global_step,
                         grad_scaler.get_scale(), speed_total, time_for_end
                     )
         else:
-            msg = " Epoch: %d   ReconstLoss %.4f   ClassLoss %.4f   TotalLoss %.4f    acc: %.4f%%    apcer: %.4f%%    bpcer: %.4f%%    acer: %.4f%%   LR %.6f   Global Step: %d   Speed %.2f samples/sec   " \
+            msg = " Epoch: %d   ReconstLoss %.4f   ClassLoss %.4f   TotalLoss %.4f    acc: %.4f%%    AUC: %.4f%%    apcer: %.4f%%    bpcer: %.4f%%    acer: %.4f%%   LR %.6f   Global Step: %d   Speed %.2f samples/sec   " \
                     "Required: %1.f hours" % (
-                        epoch, reconst_loss.avg, class_loss.avg, total_loss.avg, metrics['acc'], metrics['apcer'], metrics['bpcer'], metrics['acer'], learning_rate, global_step, speed_total, time_for_end
+                        epoch, reconst_loss.avg, class_loss.avg, total_loss.avg, metrics['acc'], metrics['auc_roc'], metrics['apcer'], metrics['bpcer'], metrics['acer'], learning_rate, global_step, speed_total, time_for_end
                     )
         logging.info(msg)
         reconst_loss.reset()
@@ -214,17 +215,22 @@ class EvaluatorLogging(object):
         self.curr_batch = 0
         self.all_pred_labels = torch.ones((num_samples))
         self.all_true_labels = torch.zeros((num_samples))
+        self.all_pred_probs = torch.zeros((num_samples))
 
 
-    def update(self, pred_labels, true_labels):
+    def update(self, pred_labels, true_labels, pred_probs=None):
         assert pred_labels.size(0) == true_labels.size(0), 'Error: pred_labels.size(0) is different from true_labels.size(0). Sizes must be equal.'
         self.all_pred_labels[self.curr_idx:self.curr_idx+pred_labels.size(0)] = pred_labels
         self.all_true_labels[self.curr_idx:self.curr_idx+true_labels.size(0)] = true_labels
+        
+        if not pred_probs is None:
+            self.all_pred_probs[self.curr_idx:self.curr_idx+pred_labels.size(0)] = pred_probs
+        
         self.curr_idx += pred_labels.size(0)
         self.curr_batch += 1
 
 
-    def evaluate(self):
+    def evaluate(self, compute_auc_roc=True):
         pred_labels = self.all_pred_labels[:self.curr_idx]
         true_labels = self.all_true_labels[:self.curr_idx]
 
@@ -250,6 +256,11 @@ class EvaluatorLogging(object):
         acer = (apcer + bpcer) / 2.0
         hter = (far + frr) / 2.0
 
+        auc_roc = 0.0
+        if compute_auc_roc:
+            pred_probs = self.all_pred_probs[:self.curr_idx]
+            auc_roc = self.compute_auc_roc(pred_probs, true_labels)
+
         metrics = {'tp': tp,
                    'fp': fp,
                    'tn': tn,
@@ -264,10 +275,45 @@ class EvaluatorLogging(object):
                    'npcer': npcer,
                    'bpcer': bpcer,
                    'acer': acer,
-                   'hter': hter
+                   'hter': hter,
+                   'auc_roc': auc_roc
                    }
 
         return metrics
+
+
+    def get_labels_from_probabilities(self, pred_probs, thresh=0.5):
+        idx_probs_le_thresh = torch.le(pred_probs, thresh)
+        pred_labels = torch.zeros((pred_probs.size(0)))
+        pred_labels[idx_probs_le_thresh] = 0
+        pred_labels[torch.logical_not(idx_probs_le_thresh)] = 1
+        return pred_labels
+
+
+    def get_tp_fp_tn_fn(self, pred_labels, true_labels):
+        tp = float(torch.sum(torch.logical_and(pred_labels, true_labels)))
+        fp = float(torch.sum(torch.logical_and(pred_labels, torch.logical_not(true_labels))))
+        tn = float(torch.sum(torch.logical_and(torch.logical_not(pred_labels), torch.logical_not(true_labels))))
+        fn = float(torch.sum(torch.logical_and(torch.logical_not(pred_labels), true_labels)))
+        return tp, fp, tn, fn
+
+
+    def compute_auc_roc(self, pred_probs, true_labels):
+        num_thresholds = 100
+        all_tpr = torch.zeros((num_thresholds))
+        all_fpr = torch.zeros((num_thresholds))
+
+        for idx, thresh in enumerate(torch.arange(0, 1, 1/num_thresholds)):
+            pred_labels = self.get_labels_from_probabilities(pred_probs, thresh)
+            tp, fp, tn, fn = self.get_tp_fp_tn_fn(pred_labels, true_labels)
+
+            tpr = 0 if (tp + fn == 0) else (tp / (tp + fn))
+            fpr = 0 if (fp + tn == 0) else (fp / (fp + tn))
+            all_tpr[idx] = tpr
+            all_fpr[idx] = fpr
+        
+        auc_roc = torch.trapz(all_tpr, all_fpr)
+        return auc_roc
 
 
     def reset(self):

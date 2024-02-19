@@ -9,6 +9,10 @@ from easydict import EasyDict as edict
 config = edict()
 config.margin_list = (1.0, 0.5, 0.0)
 
+# config.scale = 64  # original
+# config.scale = 4     # Bernardo
+config.scale = 2     # Bernardo
+
 config.network = "r50"   # original
 
 config.resume = False
@@ -29,8 +33,8 @@ config.weight_decay = 5e-6
 # config.batch_size = 128  # original
 # config.batch_size = 64   # Bernardo
 # config.batch_size = 32   # Bernardo
-config.batch_size = 16     # Bernardo
-# config.batch_size = 8    # Bernardo
+# config.batch_size = 16   # Bernardo
+config.batch_size = 8      # Bernardo
 
 # config.lr = 0.1
 # config.lr = 0.05
