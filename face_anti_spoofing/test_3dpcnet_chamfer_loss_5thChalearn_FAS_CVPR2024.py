@@ -69,7 +69,8 @@ def main(args):
         cfg.img_size,                 # Bernardo
         args.part,
         local_rank,
-        cfg.batch_size,
+        # cfg.batch_size,
+        args.batch,
         cfg.frames_per_video if hasattr(cfg, 'frames_per_video') else 1,
         cfg.dali,
         cfg.dali_aug,
@@ -142,8 +143,9 @@ def main(args):
     total_loss_am = AverageMeter()
     amp = torch.cuda.amp.grad_scaler.GradScaler(growth_interval=100)
 
-    # all_input_imgs = np.zeros((len(train_loader.dataset),3,224,224), dtype=np.float32)
-    # all_pred_pointcloud = np.zeros((len(train_loader.dataset),2500,3), dtype=np.float32)
+    all_input_imgs = np.zeros((len(train_loader.dataset),3,224,224), dtype=np.float32)
+    all_true_pointcloud = np.zeros((len(train_loader.dataset),2500,3), dtype=np.float32)
+    all_pred_pointcloud = np.zeros((len(train_loader.dataset),2500,3), dtype=np.float32)
     all_true_labels = np.zeros((len(train_loader.dataset),), dtype=np.float32)
     all_pred_labels = np.zeros((len(train_loader.dataset),), dtype=np.float32)
     all_probs_real_face = np.zeros((len(train_loader.dataset),), dtype=np.float32)
@@ -171,6 +173,9 @@ def main(args):
             sample_end_batch = sample_start_batch+img.size(0)
 
             batch_img_paths = train_loader.dataset.protocol_data[sample_start_batch:sample_end_batch]
+            all_input_imgs[sample_start_batch:sample_end_batch] = img.cpu().numpy()
+            all_true_pointcloud[sample_start_batch:sample_end_batch] = true_pointcloud.cpu().numpy()
+            all_pred_pointcloud[sample_start_batch:sample_end_batch] = pred_pointcloud.cpu().numpy()
             all_true_labels[sample_start_batch:sample_end_batch] = local_labels.cpu().numpy()
             all_pred_labels[sample_start_batch:sample_end_batch] = pred_labels.cpu().numpy()
             all_probs_real_face[sample_start_batch:sample_end_batch] = batch_probs_real_face
@@ -184,8 +189,6 @@ def main(args):
             print('-----------------')
             # sys.exit(0)
 
-            # path_save_test_samples = os.path.join(os.path.dirname(args.weights), 'test_samples')
-            # save_samples(path_save_test_samples, batch_img_paths, local_labels.cpu().numpy(), pred_labels.cpu().numpy(), pred_pointcloud.cpu().numpy())
         print('')
 
         # callback_logging(global_step, reconst_loss_am, class_loss_am, total_loss_am, train_evaluator,
@@ -204,6 +207,19 @@ def main(args):
         print(f'Saving scores file: \'{output_path_scores_file}\'')
         save_scores_text_file(train_loader.dataset.protocol_data, all_probs_real_face, file_path=output_path_scores_file)
 
+        if args.save_pred_samples:
+            path_save_test_samples = os.path.join(output_path_dir, 'preds_samples')
+            # save_samples(path_save_test_samples, batch_img_paths, local_labels.cpu().numpy(), pred_labels.cpu().numpy(), pred_pointcloud.cpu().numpy())
+            print('')
+            save_samples(path_save_test_samples,
+                         train_loader.dataset.protocol_data,
+                         all_input_imgs,
+                         all_true_pointcloud,
+                         all_pred_pointcloud,
+                         all_true_labels,
+                         all_pred_labels,
+                         all_probs_real_face)
+
         print('Finished')
 
 
@@ -219,25 +235,31 @@ def save_scores_text_file(protocol_data, all_probs_real_face, file_path):
             file.flush()    
 
 
-def save_samples(path_dir_samples, img, true_pointcloud, local_labels, pred_pointcloud, pred_labels):
-    for i in range(img.size(0)):
-        sample_dir = f'sample={i}_true-label={local_labels[i]}_pred-label={pred_labels[i]}'
-        path_sample = os.path.join(path_dir_samples, sample_dir)
-        os.makedirs(path_sample, exist_ok=True)
+def save_samples(path_dir_samples, protocol_data, input_imgs, true_pointcloud, pred_pointcloud, true_labels, pred_labels, probs_real_face):
+    for i in range(len(protocol_data)):
+        subdir = '/'.join(protocol_data[i][0].split('/')[:-1])
+        sample_name = protocol_data[i][0].replace('/', '_')
+        sample_dir = f'{sample_name}_truelabel={int(true_labels[i])}_predlabel={int(pred_labels[i])}_predprob={probs_real_face[i]}'
+        path_dir_sample = os.path.join(path_dir_samples, subdir, sample_dir)
+        print(f'\npath_dir_sample: \'{path_dir_sample}\'')
+        os.makedirs(path_dir_sample, exist_ok=True)
 
-        img_rgb = np.transpose(img[i].cpu().numpy(), (1, 2, 0))  # from (3,224,224) to (224,224,3)
-        # img = ((img/255.)-0.5)/0.5
+        img_rgb = np.transpose(input_imgs[i], (1, 2, 0))  # from (3,224,224) to (224,224,3)
         img_rgb = (((img_rgb*0.5)+0.5)*255).astype(np.uint8)
         img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
-        path_img = os.path.join(path_sample, f'img.png')
+        path_img = os.path.join(path_dir_sample, f'img_{sample_name}.png')
+        print(f'path_img: \'{path_img}\'')
         cv2.imwrite(path_img, img_bgr)
 
-        if len(true_pointcloud.size()) > 1:
-            path_true_pc = os.path.join(path_sample, f'true_pointcloud.obj')
-            write_obj(path_true_pc, true_pointcloud[i])
-
-        path_pred_pc = os.path.join(path_sample, f'pred_pointcloud.obj')
+        path_pred_pc = os.path.join(path_dir_sample, f'pred_pointcloud_{sample_name}.obj')
+        print(f'path_pred_pc: \'{path_pred_pc}\'')
         write_obj(path_pred_pc, pred_pointcloud[i])
+
+        path_true_pc = os.path.join(path_dir_sample, f'true_pointcloud_{sample_name}.obj')
+        print(f'path_true_pc: \'{path_true_pc}\'')
+        write_obj(path_true_pc, true_pointcloud[i])
+
+        print('-----------------')
 
 
 def save_model(checkpoint, path_save_model, cfg, wandb_logger, run_name, epoch):
@@ -258,12 +280,14 @@ if __name__ == "__main__":
         description="Distributed Arcface Training in Pytorch")
     parser.add_argument("--config", type=str, default='configs/UniAttackData_3d_hrn_r50.py', help="Ex: --config configs/UniAttackData_3d_hrn_r50.py")
     parser.add_argument("--weights", type=str, default='work_dirs/UniAttackData_3d_hrn_r50_prot=[\'p1\',\'p2.1\',\'p2.2\']_fpv=-1_imgsize=224_maxepoch=300_batch=8_lr=0.0025_wd=5e-06_embedd=256_20240214_220712/best_model.pt', help="Ex: --weights work_dirs/UniAttackData_3d_hrn_r50_prot=[\'p1\',\'p2.1\',\'p2.2\']_fpv=-1_imgsize=224_maxepoch=300_batch=8_lr=0.0025_wd=5e-06_embedd=256_20240214_220712/best_model.pt")
+    parser.add_argument("--batch", type=int, default=8)
     parser.add_argument("--part", type=str, default='dev', help="Ex: --part dev")
     parser.add_argument("--protocol", type=str, default='/datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData/phase1/p1/dev.txt', help="Ex: --protocol /datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData/phase1/p1/dev.txt")
     parser.add_argument("--img-path", type=str, default='/datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData_bbox_crop/phase1', help="Ex: --img_path /datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData_bbox_crop/phase1")
     parser.add_argument("--output-dir-name", type=str, default='scores_5thChalearn_FAS_CVPR2024', help="Ex: --img_path /datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData_bbox_crop/phase1")
+    parser.add_argument("--save-pred-samples", action='store_true')
 
-    # parser.add_argument("--monitor-test", action='store_true')
-    # parser.add_argument("--exp-suffix", type=str, default='', help="Some information to be concatenated to the experiment folder name (Ex: EXPERIMENT_ABOUT_BLAH)")
+    # print(parser.parse_args())
+    # sys.exit(0)
 
     main(parser.parse_args())

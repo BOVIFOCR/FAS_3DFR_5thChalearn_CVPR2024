@@ -9,9 +9,10 @@ from easydict import EasyDict as edict
 config = edict()
 config.margin_list = (1.0, 0.5, 0.0)
 
-# config.scale = 64  # original
-config.scale = 16  # Bernardo
-# config.scale = 8     # Bernardo
+# config.scale = 64    # original
+config.scale = 32  # Bernardo
+# config.scale = 16  # Bernardo
+# config.scale = 8   # Bernardo
 # config.scale = 4   # Bernardo
 
 config.network = "r50"   # original
