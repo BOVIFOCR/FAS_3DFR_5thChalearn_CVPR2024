@@ -125,9 +125,10 @@ class _3DPCNet_Reconst_ClassifMLP(nn.Module):
     def forward(self, img):
         def _regress_pointcloud(img):        # input     -> x.shape = (batch, 3, 224, 224)
             embedd = self.encoder(img)       # encoder   -> x.shape = (batch, 256)
+            embedd = nn.functional.normalize(embedd, dim=1)
             embedd = embedd.unsqueeze(1)     # unsqueeze -> x.shape = (batch, 1, 256)
             pred_pc = self.decoder(embedd)   # decoder   -> x.shape = (batch, 2500, 3)
-            return pred_pc
+            return embedd, pred_pc
 
         def _get_logits(x):
             x = x.reshape(x.size(0), self.num_output_points*self.num_axis)
@@ -135,9 +136,9 @@ class _3DPCNet_Reconst_ClassifMLP(nn.Module):
             return logits
 
         def _forward(img):
-            pred_pc = _regress_pointcloud(img)
+            face_embedd, pred_pc = _regress_pointcloud(img)
             logits = _get_logits(pred_pc)
-            return pred_pc, logits
+            return face_embedd, pred_pc, logits
 
         if self.fp16:
             with torch.cuda.amp.autocast(self.fp16):

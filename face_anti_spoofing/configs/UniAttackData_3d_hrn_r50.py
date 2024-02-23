@@ -9,11 +9,13 @@ from easydict import EasyDict as edict
 config = edict()
 config.margin_list = (1.0, 0.5, 0.0)
 
-# config.scale = 64    # original
-config.scale = 32  # Bernardo
-# config.scale = 16  # Bernardo
-# config.scale = 8   # Bernardo
-# config.scale = 4   # Bernardo
+# config.scale = 64   # original
+# config.scale = 32   # Bernardo
+# config.scale = 16   # Bernardo
+# config.scale = 8    # Bernardo
+config.scale = 4      # Bernardo
+# config.scale = 2    # Bernardo
+# config.scale = 1    # Bernardo
 
 config.network = "r50"   # original
 
@@ -47,6 +49,9 @@ config.lr = 0.0025
 # config.lr = 0.0005
 # config.lr = 0.00005
 
+config.lamb_reconst_loss = 0.01
+config.lamb_class_loss = 1.0
+
 # config.verbose = 2000  # original for 5.1M images
 config.verbose = 100     # Bernardo
 # config.verbose = 10    # Bernardo
@@ -65,7 +70,8 @@ config.frames_per_video = -1  # all frames
 
 if nodename == 'duo':
     config.dataset_path = '/datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData/phase1'                      # Bernardo
-    config.rgb_path = '/datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData_bbox_crop/phase1'                # Bernardo
+    # config.rgb_path = '/datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData_bbox_crop/phase1'              # Bernardo
+    config.rgb_path = '/datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData_align_crop/phase1'               # Bernardo
     config.pc_path = '/datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData_bbox_crop_3D-HRN-sampled/phase1'  # Bernardo
 
 elif nodename == 'daugman':
@@ -85,12 +91,12 @@ config.num_classes = 2         # (live or spoof) Bernardo
 # config.num_classes = 5       # (0=real; 1=print1; 2=print2; 3=video-replay1; 4=video-replay2) Bernardo
 
 # config.num_image = 5179510   # original
-config.num_image = 8192        # Bernardo
+config.num_image = 34568       # Bernardo
 
 # config.max_epoch = 20
 # config.max_epoch = 50
-# config.max_epoch = 100
-config.max_epoch = 300
+config.max_epoch = 100
+# config.max_epoch = 300
 
 config.warmup_epoch = 0
 # config.val_targets = ['lfw', 'cfp_fp', "agedb_30"]

@@ -282,9 +282,10 @@ def main(args):
 
             global_step += 1
             # loss: torch.Tensor = module_partial_fc(local_embeddings, local_labels)   # original
-            pred_pointcloud, pred_logits = backbone(img)
-            reconst_loss = chamfer_loss(true_pointcloud, pred_pointcloud)              # Bernardo
+            face_embedd, pred_pointcloud, pred_logits = backbone(img)
+            reconst_loss = cfg.lamb_reconst_loss*chamfer_loss(true_pointcloud, pred_pointcloud)              # Bernardo
             class_loss, probabilities, pred_labels = module_partial_fc(pred_logits, local_labels)     # Bernardo
+            class_loss = cfg.lamb_class_loss*class_loss
             total_loss = reconst_loss + class_loss
 
             if cfg.fp16:
@@ -317,7 +318,7 @@ def main(args):
                 path_dir_samples = os.path.join(cfg.output, f'samples/epoch={epoch}_batch={batch_idx}/train')
                 print('Saving train samples:', path_dir_samples)
                 save_sample(path_dir_samples, img, true_pointcloud, local_labels,
-                            pred_pointcloud, pred_labels)
+                            pred_pointcloud, pred_labels, probabilities[:,1])
         print('')
 
         with torch.no_grad():
@@ -379,33 +380,35 @@ def validate(chamfer_loss, module_partial_fc, backbone, val_loader, val_evaluato
         val_total_loss_am = AverageMeter()
         for val_batch_idx, (val_img, val_pointcloud, val_labels) in enumerate(val_loader):
             print(f'epoch: {epoch}/{cfg.max_epoch-1} - val_batch_idx: {val_batch_idx}/{len(val_loader)-1}', end='\r')
-            val_pred_pointcloud, val_pred_logits = backbone(val_img)
-            val_loss_reconst = chamfer_loss(val_pointcloud, val_pred_pointcloud)
+            val_face_embedd, val_pred_pointcloud, val_pred_logits = backbone(val_img)
+            val_loss_reconst = cfg.lamb_reconst_loss*chamfer_loss(val_pointcloud, val_pred_pointcloud)
             val_loss_class, val_probabilities, val_pred_labels = module_partial_fc(val_pred_logits, val_labels)
+            val_loss_class = cfg.lamb_class_loss*val_loss_class
             val_total_loss = val_loss_reconst + val_loss_class
             
             val_reconst_loss_am.update(val_loss_reconst.item(), 1)
             val_class_loss_am.update(val_loss_class.item(), 1)
             val_total_loss_am.update(val_total_loss.item(), 1)
 
-            val_evaluator.update(val_pred_labels, val_labels)
+            val_evaluator.update(val_pred_labels, val_labels, val_probabilities[:,1])
 
             if (epoch % 10 == 0 or epoch == cfg.max_epoch-1) and val_batch_idx == 0:
                 path_dir_samples = os.path.join(cfg.output, f'samples/epoch={epoch}_batch={val_batch_idx}/val')
                 print('Saving val samples:', path_dir_samples)
                 save_sample(path_dir_samples, val_img, val_pointcloud, val_labels,
-                            val_pred_pointcloud, val_pred_labels)
+                            val_pred_pointcloud, val_pred_labels, val_probabilities[:,1])
         print('')
 
         metrics = val_evaluator.evaluate()
 
-        print('Validation:    val_ReconstLoss: %.4f    val_ClassLoss: %.4f    val_TotalLoss: %.4f    val_acc: %.4f%%    val_apcer: %.4f%%    val_bpcer: %.4f%%    val_acer: %.4f%%' %
-              (val_reconst_loss_am.avg, val_class_loss_am.avg, val_total_loss_am.avg, metrics['acc'], metrics['apcer'], metrics['bpcer'], metrics['acer']))
+        print('Validation:    val_ReconstLoss: %.4f    val_ClassLoss: %.4f    val_TotalLoss: %.4f    val_acc: %.4f%%    val_AUC: %.4f%%    val_apcer: %.4f%%    val_bpcer: %.4f%%    val_acer: %.4f%%' %
+              (val_reconst_loss_am.avg, val_class_loss_am.avg, val_total_loss_am.avg, metrics['acc'], metrics['auc_roc'], metrics['apcer'], metrics['bpcer'], metrics['acer']))
 
         writer.add_scalar('loss/val_reconst_loss', val_reconst_loss_am.avg, epoch)
         writer.add_scalar('loss/val_class_loss', val_class_loss_am.avg, epoch)
         writer.add_scalar('loss/val_total_loss', val_total_loss_am.avg, epoch)
         writer.add_scalar('acc/val_acc', metrics['acc'], epoch)
+        writer.add_scalar('acc/val_auc', metrics['auc_roc'], epoch)
         writer.add_scalar('apcer/val_apcer', metrics['apcer'], epoch)
         writer.add_scalar('bpcer/val_bpcer', metrics['bpcer'], epoch)
         writer.add_scalar('acer/val_acer', metrics['acer'], epoch)
@@ -433,7 +436,7 @@ def test(chamfer_loss, module_partial_fc, backbone, test_loader, test_evaluator,
         # test_total_loss_am = AverageMeter()
         for test_batch_idx, (test_img, test_pointcloud, test_labels) in enumerate(test_loader):
             print(f'epoch: {epoch}/{cfg.max_epoch-1} - test_batch_idx: {test_batch_idx}/{len(test_loader)-1}', end='\r')
-            test_pred_pointcloud, test_pred_logits = backbone(test_img)
+            test_face_embedd, test_pred_pointcloud, test_pred_logits = backbone(test_img)
             # test_loss_reconst = chamfer_loss(test_pointcloud, test_pred_pointcloud)
             test_loss_class, test_probabilities, test_pred_labels = module_partial_fc(test_pred_logits, test_labels)
             # test_total_loss = test_loss_reconst + test_loss_class
@@ -474,9 +477,9 @@ def test(chamfer_loss, module_partial_fc, backbone, test_loader, test_evaluator,
         # test_total_loss_am.reset()
 
 
-def save_sample(path_dir_samples, img, true_pointcloud, local_labels, pred_pointcloud, pred_labels):
+def save_sample(path_dir_samples, img, true_pointcloud, local_labels, pred_pointcloud, pred_labels, pred_probs):
     for i in range(img.size(0)):
-        sample_dir = f'sample={i}_true-label={local_labels[i]}_pred-label={pred_labels[i]}'
+        sample_dir = f'sample={i}_true-label={local_labels[i]}_pred-label={pred_labels[i]}_pred_prob={pred_probs[i]}'
         path_sample = os.path.join(path_dir_samples, sample_dir)
         os.makedirs(path_sample, exist_ok=True)
 

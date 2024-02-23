@@ -320,7 +320,8 @@ class UniAttackData_FRAMES_3D_HRN(Dataset):
             if label == 1:   # in dataset UniAttackData 0=real, 1=spoof
                 pc_data = self.flat_pc_axis_z(pc_data)
         else:
-            pc_data = torch.tensor(0)
+            # pc_data = torch.tensor(0)
+            pc_data = torch.zeros((2500,3))
 
         # save_path = f'./pointcloud_index={index}_label={label}.obj'
         # self.write_obj(save_path, pc_data)
