@@ -7,8 +7,8 @@ from easydict import EasyDict as edict
 # mount -t tmpfs -o size=140G  tmpfs /train_tmp
 
 config = edict()
-config.margin_list = (1.0, 0.25, 0.0)    # Bernardo
-# config.margin_list = (1.0, 0.5, 0.0)   # default
+# config.margin_list = (1.0, 0.25, 0.0)  # Bernardo
+config.margin_list = (1.0, 0.5, 0.0)     # default
 # config.margin_list = (1.0, 0.75, 0.0)  # Bernardo
 
 # config.scale = 64   # original
