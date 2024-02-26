@@ -127,7 +127,7 @@ def main(args):
         cfg.dataset_path,   # Bernardo
         [cfg.rgb_path, cfg.pc_path],  # Bernardo
         cfg.img_size,       # Bernardo
-        'train',
+        'dev',
         local_rank,
         cfg.batch_size,
         cfg.frames_per_video if hasattr(cfg, 'frames_per_video') else 1,
@@ -138,7 +138,8 @@ def main(args):
         role='val',
         # percent=0.2,
         percent=1.0,
-        protocol_data=train_loader.dataset.protocol_data,
+        # protocol_data=train_loader.dataset.protocol_data,
+        protocol_data=None,
         drop_last_batch=True,
     )
     print(f'    val samples: {len(val_loader.dataset)}')
@@ -152,7 +153,7 @@ def main(args):
             cfg.dataset_path,   # Bernardo
             [cfg.rgb_path, cfg.pc_path],  # Bernardo
             cfg.img_size,       # Bernardo
-            'dev',
+            'test',
             local_rank,
             cfg.batch_size,
             cfg.frames_per_video if hasattr(cfg, 'frames_per_video') else 1,

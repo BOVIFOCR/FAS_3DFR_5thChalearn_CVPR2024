@@ -201,7 +201,7 @@ def main(args):
             cfg.train_dataset,            # Bernardo
             args.protocol,                # Bernardo
             cfg.dataset_path,             # Bernardo
-            [cfg.rgb_path, cfg.pc_path],  # Bernardo
+            [args.img_path, cfg.pc_path], # Bernardo
             cfg.img_size,                 # Bernardo
             args.part,
             local_rank,

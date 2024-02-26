@@ -41,19 +41,12 @@ class UniAttackData_FRAMES_3D_HRN(Dataset):
 
             if part == 'train':
                 self.protocol_file_path = [os.path.join(prot_path, 'train_label.txt') for prot_path in self.protocols_path]
-                # self.rgb_path = [os.path.join(rgb_path, prot_id, 'train') for prot_id in protocol_id]
-                # self.pc_path = [os.path.join(pc_path, prot_id, 'train') for prot_id in protocol_id]
             elif part == 'val' or part == 'validation' or part == 'dev' or part == 'development':
-                self.protocol_file_path = [os.path.join(prot_path, 'dev.txt') for prot_path in self.protocols_path]
-            #     # self.root_dir_part = os.path.join(root_dir, 'dev')
-            #     self.protocol_file_path = os.path.join(self.protocols_path, 'dev.txt')
-            #     self.rgb_path = os.path.join(rgb_path, protocol_id, 'dev')
-            #     self.pc_path = os.path.join(pc_path, protocol_id, 'dev')
-            # elif part == 'test':
-            #     # self.root_dir_part = os.path.join(root_dir, 'test')
-            #     self.protocol_file_path = os.path.join(self.protocols_path, 'test.txt')
-            #     self.rgb_path = os.path.join(rgb_path, protocol_id, 'test')
-            #     self.pc_path = os.path.join(pc_path, protocol_id, 'test')
+                # self.protocol_file_path = [os.path.join(prot_path, 'dev.txt') for prot_path in self.protocols_path]
+                self.protocol_file_path = [os.path.join(prot_path, 'dev_label.txt') for prot_path in self.protocols_path]
+            elif part == 'test':
+                # self.protocol_file_path = [os.path.join(prot_path, 'dev.txt') for prot_path in self.protocols_path]
+                self.protocol_file_path = [os.path.join(prot_path, 'test.txt') for prot_path in self.protocols_path]
             else:
                 raise Exception(f'Error, dataset partition not recognized: \'{part}\'')
 
