@@ -179,13 +179,16 @@ def make_samples_list_UniAttackData(protocol_data_valid_samples=[], frames_per_v
             assert len(rgb_file_path) <= 1, f'Error, multiple rgb files found \'{rgb_file_path}\''
             rgb_file_path = rgb_file_path[0]
 
-            pc_file_pattern = os.path.join(pc_path, sub_path, sample_name, sample_name+'*'+pc_file_ext)
-            pc_file_path = glob.glob(pc_file_pattern)
-            # print('pc_file_path:', pc_file_path)
-            assert len(pc_file_path) > 0, f'Error, no point cloud files found with pattern \'{pc_file_pattern}\''
-            assert len(pc_file_path) <= 1, f'Error, multiple point cloud files found \'{pc_file_path}\''
-            pc_file_path = pc_file_path[0]
-            # sys.exit(0)
+            if not ignore_pointcloud_files:
+                pc_file_pattern = os.path.join(pc_path, sub_path, sample_name, sample_name+'*'+pc_file_ext)
+                pc_file_path = glob.glob(pc_file_pattern)
+                # print('pc_file_path:', pc_file_path)
+                assert len(pc_file_path) > 0, f'Error, no point cloud files found with pattern \'{pc_file_pattern}\''
+                assert len(pc_file_path) <= 1, f'Error, multiple point cloud files found \'{pc_file_path}\''
+                pc_file_path = pc_file_path[0]
+                # sys.exit(0)
+            else:
+                pc_file_path = None
 
             one_sample = (rgb_file_path, pc_file_path, label)
 
@@ -200,13 +203,16 @@ def make_samples_list_UniAttackData(protocol_data_valid_samples=[], frames_per_v
             assert len(rgb_file_path) <= 1, f'Error, multiple rgb files found \'{rgb_file_path}\''
             rgb_file_path = rgb_file_path[0]
 
-            pc_file_pattern = os.path.join(pc_path, sub_path, sample_name, sample_name+'*'+pc_file_ext)
-            pc_file_path = glob.glob(pc_file_pattern)
-            # print('pc_file_path:', pc_file_path)
-            assert len(pc_file_path) > 0, f'Error, no point cloud files found with pattern \'{pc_file_pattern}\''
-            assert len(pc_file_path) <= 1, f'Error, multiple point cloud files found \'{pc_file_path}\''
-            pc_file_path = pc_file_path[0]
-            # sys.exit(0)
+            if not ignore_pointcloud_files:
+                pc_file_pattern = os.path.join(pc_path, sub_path, sample_name, sample_name+'*'+pc_file_ext)
+                pc_file_path = glob.glob(pc_file_pattern)
+                # print('pc_file_path:', pc_file_path)
+                assert len(pc_file_path) > 0, f'Error, no point cloud files found with pattern \'{pc_file_pattern}\''
+                assert len(pc_file_path) <= 1, f'Error, multiple point cloud files found \'{pc_file_path}\''
+                pc_file_path = pc_file_path[0]
+                # sys.exit(0)
+            else:
+                pc_file_path = None
 
             one_sample = (rgb_file_path, pc_file_path, label, label2)
 

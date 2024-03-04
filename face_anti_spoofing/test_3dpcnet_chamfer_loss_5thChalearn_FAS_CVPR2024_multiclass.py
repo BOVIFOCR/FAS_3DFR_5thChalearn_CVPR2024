@@ -231,6 +231,7 @@ def main(args):
             cfg.num_workers,
             role='test',
             percent=1.0,
+            ignore_pointcloud_files=True,
             protocol_data=None,
             filter_valid_samples=False if args.part=='dev' or args.part=='test' else True,
             shuffle_samples=False
@@ -412,8 +413,8 @@ if __name__ == "__main__":
     parser.add_argument("--batch", type=int, default=8)
     parser.add_argument("--part", type=str, default='dev', help="Ex: --part dev")
     parser.add_argument("--protocol", type=str, default='/datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData/phase1/p1/dev.txt', help="Ex: --protocol /datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData/phase1/p1/dev.txt")
-    parser.add_argument("--img-path", type=str, default='/datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData_bbox_crop/phase1', help="Ex: --img_path /datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData_bbox_crop/phase1")
-    parser.add_argument("--output-dir-name", type=str, default='scores_5thChalearn_FAS_CVPR2024', help="Ex: --img_path /datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData_bbox_crop/phase1")
+    parser.add_argument("--img-path", type=str, default='/datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData_align_crop/phase1', help="Ex: --img_path /datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData_align_crop/phase1")
+    parser.add_argument("--output-dir-name", type=str, default='scores_5thChalearn_FAS_CVPR2024', help="Ex: --img_path /datasets1/bjgbiesseck/liveness/fas_cvpr2024/UniAttackData_align_crop/phase1")
     parser.add_argument("--save-pred-samples", action='store_true')
 
     parser.add_argument("--test-one-sample", action='store_true')
