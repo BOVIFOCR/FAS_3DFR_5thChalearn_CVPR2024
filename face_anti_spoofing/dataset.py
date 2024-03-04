@@ -17,6 +17,7 @@ from utils.utils_distributed_sampler import get_dist_info, worker_init_fn
 
 from dataloaders.oulu_npu_frames_3d_hrn import OULU_NPU_FRAMES_3D_HRN
 from dataloaders.UniAttackData_frames_3d_hrn import UniAttackData_FRAMES_3D_HRN
+from dataloaders.UniAttackData_frames_3d_hrn_multiclass import UniAttackData_FRAMES_3D_HRN_MULTICLASS
 from dataloaders.oulu_npu_frames import OULU_NPU_FRAMES
 
 
@@ -83,6 +84,11 @@ def get_dataloader(
             train_set = UniAttackData_FRAMES_3D_HRN(root_dir, protocol_id, rgb_path, pc_path, img_size, frames_per_video, \
                                                     part, role, percent, ignore_pointcloud_files, protocol_data, filter_valid_samples, \
                                                     local_rank=local_rank, transform=transform)
+        elif train_dataset == 'UniAttackData_3d_hrn_multiclass':
+            rgb_path, pc_path = frames_path
+            train_set = UniAttackData_FRAMES_3D_HRN_MULTICLASS(root_dir, protocol_id, rgb_path, pc_path, img_size, frames_per_video, \
+                                                               part, role, percent, ignore_pointcloud_files, protocol_data, filter_valid_samples, \
+                                                               local_rank=local_rank, transform=transform)
         else:
             raise Exception(f'Error: dataloader not implemented for dataset \'{train_dataset}\'.')
 

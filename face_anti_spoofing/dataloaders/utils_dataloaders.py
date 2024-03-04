@@ -116,6 +116,8 @@ def load_file_protocol_UniAttackData(file_path):
             sample = line.strip().split(' ')
             if len(sample) == 2:    # if contains path and label
                 sample[1] = int(sample[1])    # convert train label to int
+            elif len(sample) == 3:  # if contains path, label1, and label2
+                sample[1], sample[2] = int(sample[1]), int(sample[2])    # convert train label to int
             protocol_data.append(sample)   
             line = f.readline()
         # print('protocol_data:', protocol_data)
@@ -126,7 +128,12 @@ def load_file_protocol_UniAttackData(file_path):
 
 def filter_valid_samples_UniAttackData(protocol_data, rgb_path='', pc_path='', rgb_file_ext='', pc_file_ext=''):
     protocol_data_valid_samples = []
-    for i, (sample, label) in enumerate(protocol_data):
+    for i, sample in enumerate(protocol_data):
+        label2 = None
+        if len(sample) == 2:
+            sample, label1 = sample
+        elif len(sample) == 3:
+            sample, label1, label2 = sample
         print(f'Filtering valid samples - protocol_data: {i+1}/{len(protocol_data)} - protocol_data_valid_samples: {len(protocol_data_valid_samples)}', end='\r')
         sub_path, sample_name = os.path.dirname(sample), os.path.basename(sample).split('.')[0]
 
@@ -142,7 +149,10 @@ def filter_valid_samples_UniAttackData(protocol_data, rgb_path='', pc_path='', r
         # sys.exit(0)
 
         if len(rgb_file_paths) == 1 and len(pc_file_paths) == 1:
-            protocol_data_valid_samples.append([sample, label])
+            if label2 is None:
+                protocol_data_valid_samples.append([sample, label1])          # single class
+            else:
+                protocol_data_valid_samples.append([sample, label1, label2])  # multi-class
 
     print('')
     return protocol_data_valid_samples
@@ -178,6 +188,27 @@ def make_samples_list_UniAttackData(protocol_data_valid_samples=[], frames_per_v
             # sys.exit(0)
 
             one_sample = (rgb_file_path, pc_file_path, label)
+
+        elif len(sample) == 3:   # if contains path, label1, and label2
+            sample, label, label2 = sample
+            sub_path, sample_name = os.path.dirname(sample), os.path.basename(sample).split('.')[0]
+
+            rgb_file_pattern = os.path.join(rgb_path, sub_path, sample_name+'*'+rgb_file_ext)
+            rgb_file_path = glob.glob(rgb_file_pattern)
+            # print('rgb_file_path:', rgb_file_path)
+            assert len(rgb_file_path) > 0, f'Error, no rgb files found with pattern \'{rgb_file_pattern}\''
+            assert len(rgb_file_path) <= 1, f'Error, multiple rgb files found \'{rgb_file_path}\''
+            rgb_file_path = rgb_file_path[0]
+
+            pc_file_pattern = os.path.join(pc_path, sub_path, sample_name, sample_name+'*'+pc_file_ext)
+            pc_file_path = glob.glob(pc_file_pattern)
+            # print('pc_file_path:', pc_file_path)
+            assert len(pc_file_path) > 0, f'Error, no point cloud files found with pattern \'{pc_file_pattern}\''
+            assert len(pc_file_path) <= 1, f'Error, multiple point cloud files found \'{pc_file_path}\''
+            pc_file_path = pc_file_path[0]
+            # sys.exit(0)
+
+            one_sample = (rgb_file_path, pc_file_path, label, label2)
 
         else:
             # print('\nsample:', sample)

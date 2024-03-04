@@ -144,6 +144,7 @@ class CallBackEpochLogging(object):
     def __call__(self,
                  global_step: int,
                  reconst_loss: AverageMeter,
+                 attackclass_loss: AverageMeter,
                  class_loss: AverageMeter,
                  total_loss: AverageMeter,
                  train_evaluator,
@@ -174,6 +175,7 @@ class CallBackEpochLogging(object):
             # self.writer.add_scalar('time_for_end', time_for_end, global_step)
             self.writer.add_scalar('learning_rate', learning_rate, epoch)
             self.writer.add_scalar('loss/train_reconst_loss', reconst_loss.avg, epoch)
+            self.writer.add_scalar('loss/train_attackclass_loss', attackclass_loss.avg, epoch)
             self.writer.add_scalar('loss/train_class_loss', class_loss.avg, epoch)
             self.writer.add_scalar('loss/train_total_loss', total_loss.avg, epoch)
             self.writer.add_scalar('acc/train_acc', metrics['acc'], epoch)
@@ -182,18 +184,19 @@ class CallBackEpochLogging(object):
             self.writer.add_scalar('bpcer/train_bpcer', metrics['bpcer'], epoch)
             self.writer.add_scalar('acer/train_acer', metrics['acer'], epoch)
         if fp16:
-            msg = " Epoch: %d   ReconstLoss %.4f   ClassLoss %.4f   TotalLoss %.4f    acc: %.4f%%    AUC: %.4f%%    apcer: %.4f%%    bpcer: %.4f%%    acer: %.4f%%   LR %.6f   Global Step: %d   " \
+            msg = " Epoch: %d   ReconstLoss %.4f   AttackClassLoss %.4f   ClassLoss %.4f   TotalLoss %.4f    acc: %.4f%%    AUC: %.4f%%    apcer: %.4f%%    bpcer: %.4f%%    acer: %.4f%%   LR %.6f   Global Step: %d   " \
                     "Fp16 Grad Scale: %2.f   Speed %.2f samples/sec   Required: %1.f hours" % (
-                        epoch, reconst_loss.avg, class_loss.avg, total_loss.avg, metrics['acc'], metrics['auc_roc'], metrics['apcer'], metrics['bpcer'], metrics['acer'], learning_rate, global_step,
+                        epoch, reconst_loss.avg, attackclass_loss.avg, class_loss.avg, total_loss.avg, metrics['acc'], metrics['auc_roc'], metrics['apcer'], metrics['bpcer'], metrics['acer'], learning_rate, global_step,
                         grad_scaler.get_scale(), speed_total, time_for_end
                     )
         else:
-            msg = " Epoch: %d   ReconstLoss %.4f   ClassLoss %.4f   TotalLoss %.4f    acc: %.4f%%    AUC: %.4f%%    apcer: %.4f%%    bpcer: %.4f%%    acer: %.4f%%   LR %.6f   Global Step: %d   Speed %.2f samples/sec   " \
+            msg = " Epoch: %d   ReconstLoss %.4f   AttackClassLoss %.4f   ClassLoss %.4f   TotalLoss %.4f    acc: %.4f%%    AUC: %.4f%%    apcer: %.4f%%    bpcer: %.4f%%    acer: %.4f%%   LR %.6f   Global Step: %d   Speed %.2f samples/sec   " \
                     "Required: %1.f hours" % (
-                        epoch, reconst_loss.avg, class_loss.avg, total_loss.avg, metrics['acc'], metrics['auc_roc'], metrics['apcer'], metrics['bpcer'], metrics['acer'], learning_rate, global_step, speed_total, time_for_end
+                        epoch, reconst_loss.avg, attackclass_loss.avg, class_loss.avg, total_loss.avg, metrics['acc'], metrics['auc_roc'], metrics['apcer'], metrics['bpcer'], metrics['acer'], learning_rate, global_step, speed_total, time_for_end
                     )
         logging.info(msg)
         reconst_loss.reset()
+        attackclass_loss.reset()
         class_loss.reset()
         total_loss.reset()
 
@@ -217,15 +220,25 @@ class EvaluatorLogging(object):
         self.all_true_labels = torch.zeros((num_samples))
         self.all_pred_probs = torch.zeros((num_samples))
 
+        self.all_pred_labels_attack = torch.ones((num_samples))
+        self.all_true_labels_attack = torch.zeros((num_samples))
+        self.all_pred_probs_attack = torch.zeros((num_samples))
 
-    def update(self, pred_labels, true_labels, pred_probs=None):
+
+    def update(self, pred_labels, true_labels, pred_probs=None, pred_labels_attacktype=None, true_labels_attacktype=None, probabilities_attacktype=None):
         assert pred_labels.size(0) == true_labels.size(0), 'Error: pred_labels.size(0) is different from true_labels.size(0). Sizes must be equal.'
         self.all_pred_labels[self.curr_idx:self.curr_idx+pred_labels.size(0)] = pred_labels
         self.all_true_labels[self.curr_idx:self.curr_idx+true_labels.size(0)] = true_labels
-        
+
         if not pred_probs is None:
             self.all_pred_probs[self.curr_idx:self.curr_idx+pred_labels.size(0)] = pred_probs
-        
+
+        if not probabilities_attacktype is None:
+            self.all_pred_labels_attack[self.curr_idx:self.curr_idx+pred_labels.size(0)] = pred_labels_attacktype
+            self.all_true_labels_attack[self.curr_idx:self.curr_idx+true_labels.size(0)] = true_labels_attacktype
+            attacktype_indices = torch.argmax(probabilities_attacktype, dim=1, keepdim=True)
+            self.all_pred_probs_attack[self.curr_idx:self.curr_idx+pred_labels.size(0)] = probabilities_attacktype.gather(1,attacktype_indices).squeeze()
+
         self.curr_idx += pred_labels.size(0)
         self.curr_batch += 1
 
