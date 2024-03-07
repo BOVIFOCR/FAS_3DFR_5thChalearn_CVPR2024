@@ -26,3 +26,8 @@ pip3 install -r requirements.txt
 ```
 export CUDA_VISIBLE_DEVICES=0; python train_model_5thChalearn_FAS_CVPR2024.py --config configs/UniAttackData_3d_hrn_r50.py
 ```
+
+#### 4 Test model:
+```
+export CUDA_VISIBLE_DEVICES=0; python test_model_5thChalearn_FAS_CVPR2024.py --config configs/UniAttackData_3d_hrn_r50.py --weights /work_dirs/experiment_folder/best_model.pt --part dev --protocol /path/to/UniAttackData/phase1/p1/dev.txt --img-path /path/to/UniAttackData_align_crop/phase1
+```
