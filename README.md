@@ -24,5 +24,5 @@ pip3 install -r requirements.txt
 
 #### 3. Train model:
 ```
-export CUDA_VISIBLE_DEVICES=0; python train_3dpcnet_chamfer_loss_5thChalearn_FAS_CVPR2024.py --config configs/UniAttackData_3d_hrn_r50.py
+export CUDA_VISIBLE_DEVICES=0; python train_model_5thChalearn_FAS_CVPR2024.py --config configs/UniAttackData_3d_hrn_r50.py
 ```
