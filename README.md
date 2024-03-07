@@ -50,3 +50,9 @@ p1/dev/005998.jpg 0.7295462
 p1/dev/005999.jpg 0.729513
 p1/dev/006000.jpg 0.7308867
 ```
+
+
+#### 6 Scores files:
+Here are the face scores files of our best model submitted in phase1 and phase2 of the 5th Chalearn Face Anti-spoofing Workshop and Challenge@CVPR2024:
+- [phase1_p1_p2.1_p2.2_dev.zip](https://github.com/BOVIFOCR/FAS_3DFR_5thChalearn_CVPR2024/blob/master/scores_bovifocr_team/phase1_p1_p2.1_p2.2_dev.zip)
+- [phase2_p1_p2.1_p2.2_dev_test.zip](https://github.com/BOVIFOCR/FAS_3DFR_5thChalearn_CVPR2024/blob/master/scores_bovifocr_team/phase2_p1_p2.1_p2.2_dev_test.zip)
