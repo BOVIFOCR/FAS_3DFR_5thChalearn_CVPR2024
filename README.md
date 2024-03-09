@@ -40,7 +40,7 @@ The trained model will be saved in the folder `work_dirs`.
 
 #### 6 Test model:
 ```
-export CUDA_VISIBLE_DEVICES=0; python test_model_5thChalearn_FAS_CVPR2024.py --config configs/UniAttackData_3d_hrn_r50.py --weights /work_dirs/experiment_folder/best_model.pt --part dev --protocol /path/to/UniAttackData/phase1/p1/dev.txt --img-path /path/to/UniAttackData_align_crop/phase1
+export CUDA_VISIBLE_DEVICES=0; python test_model_5thChalearn_FAS_CVPR2024.py --config configs/UniAttackData_3d_hrn_r50.py --weights /path/to/best_model_acc=99.8496_AUC_0.9996.pt --part dev --protocol /path/to/UniAttackData/phase1/p1/dev.txt --img-path /path/to/UniAttackData_align_crop/phase1
 ```
 
 A file `phase1_p1_dev.txt` will be generated with the image scores:
