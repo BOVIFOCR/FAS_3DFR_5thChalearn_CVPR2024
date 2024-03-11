@@ -34,8 +34,10 @@ export CUDA_VISIBLE_DEVICES=0; python train_model_5thChalearn_FAS_CVPR2024.py --
 The trained model will be saved in the folder `work_dirs`.
 
 
-#### 5. Our trained model weights:
-- [best_model_acc=99.8496_AUC_0.9996.pt](https://drive.google.com/file/d/145CCwpoytzrNT7FKE4XNkqwtiGE_zIuB/view?usp=sharing)
+#### 5. Our trained models' weights:
+- [best_model_p1.pt](https://drive.google.com/file/d/1WxqvECyRl1RtZI5Frl_DlUqR5whTec-D/view?usp=sharing)
+- [best_model_p2.1.pt](https://drive.google.com/file/d/1omEs1tMX5AyUYdr8H-e1cWkP8lfAnoyP/view?usp=sharing)
+- [best_model_p2.2.pt](https://drive.google.com/file/d/1Q8FO_V929-DGmTD0m3Lg9UZ3WfNZ1vgx/view?usp=sharing)
 
 
 #### 6 Test model:
